@@ -1,0 +1,273 @@
+
+.book-table-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  
+  background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow: hidden; 
+}
+
+
+.overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+
+.booking-content {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 50px;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.booking-content h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px;
+  color: #2C2F24;
+  margin-bottom: 10px;
+}
+
+.booking-content p {
+  color: #555;
+  margin-bottom: 30px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+
+.booking-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #2C2F24;
+}
+
+.form-group input, 
+.form-group select {
+  padding: 12px 15px;
+  border-radius: 50px; 
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #AD343E;
+  box-shadow: 0 0 0 3px rgba(173, 52, 62, 0.1);
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+
+.btn-submit {
+  grid-column: span 2;
+  margin-top: 10px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 50px;
+  border: 2px solid #AD343E;
+  color: #AD343E;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  z-index: 1;
+}
+
+.btn-submit::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: #AD343E;
+  transform: translateX(-105%) skewX(-15deg);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+
+.btn-submit:hover {
+  color: white;
+  box-shadow: 0 10px 20px rgba(173, 52, 62, 0.3);
+}
+
+.btn-submit:hover::before {
+  transform: translateX(0) skewX(0);
+}
+
+/* 5. RESPONSIVE */
+@media (max-width: 600px) {
+  .booking-form { grid-template-columns: 1fr; }
+  .full-width { grid-column: span 1; }
+  .booking-content { padding: 30px 20px; }
+}
+
+/* DETAILED TOASTER STYLES */
+.toast-box {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-200%); 
+  
+  background: white;
+  min-width: 380px; 
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  z-index: 9999; 
+  
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  border-left: 6px solid #28a745;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+.toast-box.active {
+  transform: translateX(-50%) translateY(0); 
+}
+
+.toast-icon { 
+  font-size: 28px; 
+  margin-top: 2px;
+}
+
+.toast-body {
+  flex: 1; 
+}
+
+.toast-body h4 {
+  margin: 0 0 5px 0;
+  color: #28a745;
+  font-size: 20px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.toast-body p {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  color: #555;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.4;
+}
+
+
+.toast-receipt {
+  background: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: #666;
+}
+
+.receipt-row:last-child {
+  margin-bottom: 0;
+}
+
+.receipt-value {
+  font-weight: 700;
+  color: #2C2F24;
+}
+
+.ref-code {
+  color: #AD343E;
+  letter-spacing: 1px;
+}
+
+
+.toast-info-grid {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  background: #DBDFD0; 
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  color: #2C2F24;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toast-alert {
+  color: #d9534f !important;
+  font-weight: 600;
+  font-size: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+  position: absolute;
+  top: 15px; right: 15px;
+  transition: color 0.2s;
+}
+
+.toast-close:hover {
+  color: #333;
+}
+
+/* Progress Bar */
+.toast-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 4px;
+  background: #28a745;
+  width: 0%;
+}
+
+.toast-progress.run {
+  width: 100%;
+  transition: width 12s linear; 
+}

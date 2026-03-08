@@ -1,0 +1,196 @@
+:root {
+  --footer-bg: #1e272e;
+  --footer-accent: #ff793f;
+  --text-color: #d2dae2;
+  --fancy-font: 'Playfair Display', serif;
+}
+
+.footer-compact {
+  background-color: var(--footer-bg);
+  color: var(--text-color);
+  font-family: 'Poppins', sans-serif;
+  width: 100%;
+  padding: 0;
+  border-top: 3px solid var(--footer-accent);
+  margin-top: 0;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+
+  min-height: 35px;
+}
+
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.logo-icon {
+  color: var(--footer-accent);
+
+  font-size: 1.4rem;
+}
+
+.footer-brand h2 {
+  font-family: var(--fancy-font);
+  font-style: italic;
+
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+
+  line-height: 0.8;
+}
+
+
+.footer-quote {
+  flex: 2;
+  text-align: center;
+
+
+  font-size: 1.1rem;
+
+  font-weight: 500;
+  font-style: italic;
+  font-family: var(--fancy-font);
+  color: #ffffff;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+
+.footer-social {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 15px;
+  flex: 1;
+}
+
+.copyright {
+
+  font-size: 0.75rem;
+
+  margin: 0;
+  opacity: 0.7;
+  font-family: 'Poppins', sans-serif;
+  white-space: nowrap;
+}
+
+
+.social-icons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.social-icon {
+  position: relative;
+
+
+  width: 26px;
+  height: 26px;
+
+  border-radius: 6px;
+  background-color: #fff;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.social-icon .icon {
+  font-size: 13px;
+  /* Bigger internal icon */
+  transition: color 0.3s ease-in-out;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.social-icon .tooltip {
+  font-weight: 600;
+  font-size: 10px;
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  transition: all 0.3s ease-in-out;
+  color: #fff;
+}
+
+
+.social-icon:hover {
+  width: 90px;
+  justify-content: center;
+  gap: 5px;
+}
+
+.social-icon:hover .tooltip {
+  max-width: 90px;
+  opacity: 1;
+}
+
+.social-icon:hover .icon {
+  color: #fff;
+}
+
+
+.social-icon.twitter:hover {
+  background-color: #1da1f2;
+}
+
+.social-icon.facebook:hover {
+  background-color: #1877f2;
+}
+
+.social-icon.instagram:hover {
+  background-color: #e4405f;
+}
+
+.social-icon.github:hover {
+  background-color: #333;
+}
+
+
+
+@media (max-width: 900px) {
+  .footer-container {
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .footer-quote {
+    white-space: normal;
+    display: none;
+  }
+
+  .footer-social {
+    flex-direction: column;
+    gap: 5px;
+  }
+}

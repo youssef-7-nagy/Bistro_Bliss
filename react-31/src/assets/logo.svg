@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="0 0 100 100" fill="none" stroke="#AD343E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <!-- Noodle Arches -->
+  <path d="M 18 52 A 20 20 0 0 1 56 52" />
+  <path d="M 28 52 A 10 10 0 0 1 46 52" />
+  
+  <path d="M 50 52 A 16 16 0 0 1 82 52" />
+  <path d="M 58 52 A 8 8 0 0 1 74 52" />
+
+  <!-- Chopsticks -->
+  <line x1="62" y1="36" x2="74" y2="15" />
+  <line x1="72" y1="42" x2="84" y2="21" />
+
+  <!-- Rim Line -->
+  <line x1="10" y1="52" x2="90" y2="52" />
+  
+  <!-- Bowl Curve -->
+  <path d="M 14 52 C 14 80, 25 86, 50 86 C 75 86, 86 80, 86 52" />
+
+  <!-- Pedestal Base with Left Gap -->
+  <path d="M 38 86 V 88" />
+  <path d="M 38 94 H 62 V 86" />
+
+  <!-- Bowl Highlight Pill and Dot -->
+  <path d="M 75 62 A 24 24 0 0 1 58 76" />
+  <line x1="50" y1="78" x2="50.01" y2="78" stroke-width="6.5" />
+</svg>
