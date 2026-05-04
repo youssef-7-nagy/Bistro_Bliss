@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addPoints } from "../store/slices/userSlice";
 import "./BookTable.css";
 
 export const BookTable = () => {
@@ -14,6 +16,7 @@ export const BookTable = () => {
   const [showToast, setShowToast] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingRef, setBookingRef] = useState("");
+  const dispatch = useDispatch();
 
   // Scroll to top on page mount
   useEffect(() => {
@@ -38,6 +41,11 @@ export const BookTable = () => {
         // Generate a random 6-character booking reference for the toast
         const randomRef = Math.random().toString(36).substring(2, 8).toUpperCase();
         setBookingRef(randomRef);
+
+        // Update user points in redux live if we earned any
+        if (response.data.pointsEarned) {
+          dispatch(addPoints(response.data.pointsEarned));
+        }
 
         setShowToast(true);
         // We delay clearing the form data so the toast can display the submitted details

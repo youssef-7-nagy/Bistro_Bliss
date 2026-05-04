@@ -1,28 +1,32 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Card, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../store/slices/CartSlice";
 import { toast } from "react-toastify";
 
 const ProductCard = ({ product, index }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  const { islogged } = useSelector((state) => state.user);
 
   const isLeftColumn = index % 2 === 0;
   const animationType = isLeftColumn ? 'fadeInLeft' : 'fadeInRight';
 
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
+    if (!islogged) {
+      toast.error("You must be logged in to order.", { position: "bottom-right" });
+      navigate("/Login");
+      return;
+    }
 
     // Ensure the product has _id, price, and title from your MongoDB
     dispatch(addToCart(product));
     toast.success(`${product.title} added to cart!`, {
-      position: "bottom-right",
-      autoClose: 2000,
+      position: "bottom-right"
     });
-  };
+  }, [dispatch, islogged, navigate, product]);
 
   return (
     <Card
@@ -40,6 +44,8 @@ const ProductCard = ({ product, index }) => {
             ? `http://localhost:8080/${product.images[0]}`
             : "https://via.placeholder.com/150"}
           alt={product.title}
+          loading="lazy"
+          decoding="async"
         />
 
         <div className="menu-item-text">
@@ -69,4 +75,4 @@ const ProductCard = ({ product, index }) => {
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

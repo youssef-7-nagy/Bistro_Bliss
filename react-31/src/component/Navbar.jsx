@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { FaTwitter, FaFacebookF, FaInstagram, FaGithub, FaShoppingCart, FaBars, FaTimes } from "react-icons/fa";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { FaTwitter, FaFacebookF, FaInstagram, FaGithub, FaShoppingCart, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
+import { logout } from "../store/slices/userSlice";
+import { resetCartSession } from "../store/slices/CartSlice";
 import "./Navbar.css";
 import logoSvg from "../assets/logo.svg";
 
 export const Navbar = () => {
   const { islogged: isLoggedIn, userData } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const cartCount = useSelector((state) =>
     state.cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
@@ -15,6 +19,12 @@ export const Navbar = () => {
   const navRef = useRef(null);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(resetCartSession());
+    dispatch(logout());
+    navigate("/Login");
+  };
 
   // Close menu when route changes
   useEffect(() => {
@@ -27,7 +37,7 @@ export const Navbar = () => {
       <div className="top-bar">
         <div className="contact-info">
           <span>(414) 857 - 0107</span>
-          <span>yummy@bistrobliss</span>
+          <span>yummy@velmorabliss</span>
         </div>
 
         <div className="social-links">
@@ -53,7 +63,7 @@ export const Navbar = () => {
           style={{ cursor: 'pointer' }}
         >
           <img src={logoSvg} alt="Bistro Bliss Logo" className="logo-img" />
-          <span className="logo-text">Bistro Bliss</span>
+          <span className="logo-text">Velmora Bliss</span>
         </div>
 
         <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -75,7 +85,7 @@ export const Navbar = () => {
           {isLoggedIn && userData?.role === "admin" && (
             <>
 
-              <li><NavLink to="/admin-panel">Admin Panel</NavLink></li> {/* 👈 ADDED HERE */}
+              <li><NavLink to="/admin-panel">Admin Panel</NavLink></li> 
             </>
           )}
 
@@ -94,6 +104,16 @@ export const Navbar = () => {
               </span>
             </div>
           </NavLink>
+
+          {isLoggedIn && (
+            <button
+              className="btn-outline"
+              onClick={handleLogout}
+              style={{ padding: "0.5rem 1rem", borderColor: "#e74c3c", color: "#e74c3c", display: "flex", alignItems: "center", gap: "5px" }}
+            >
+              <FaSignOutAlt /> Logout
+            </button>
+          )}
 
           <NavLink to="/BookTable">
             <button className="btn-outline">Book A Table</button>

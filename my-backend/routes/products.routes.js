@@ -18,6 +18,12 @@ router.post("",
 );
 
 
+router.put("/reorder",
+    authMiddleWare,
+    roleMiddleWare("admin", "manager"),
+    productController.reorderProducts
+);
+
 router.put("/:id", 
     authMiddleWare, 
     roleMiddleWare("admin", "manager"), 

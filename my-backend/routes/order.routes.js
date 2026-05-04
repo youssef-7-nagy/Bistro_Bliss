@@ -5,6 +5,7 @@ const { authMiddleWare } = require("../middlewares/auth.middleware");
 const { roleMiddleWare } = require("../middlewares/role.middleware");
 
 router.post("/", authMiddleWare, orderController.createOrder);
+router.post("/create-payment-intent", authMiddleWare, orderController.createPaymentIntent);
 router.get("/user/my-orders", authMiddleWare, orderController.getUserOrders);
 
 

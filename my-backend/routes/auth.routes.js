@@ -7,6 +7,8 @@ const { roleMiddleWare } = require("../middlewares/role.middleware.js");
 router.get("/me", authMiddleWare, authController.validateMe);
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/social-login", authController.socialLogin);
+router.post("/redeem", authMiddleWare, authController.redeemReward);
 router.put("/update", authMiddleWare, authController.updateProfile);
 
 

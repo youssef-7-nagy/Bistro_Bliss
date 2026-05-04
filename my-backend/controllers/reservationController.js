@@ -1,4 +1,5 @@
 const Reservation = require("../models/Reservation");
+const { User } = require("../models/User");
 
 exports.createReservation = async (req, res) => {
   try {
@@ -10,7 +11,18 @@ exports.createReservation = async (req, res) => {
     }
 
     const newReservation = await Reservation.create({ userId, name, phone, date, time, guests });
-    res.status(201).json({ message: "Reservation Created!", data: newReservation });
+
+    let pointsEarned = 0;
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        pointsEarned = 5; // Award 5 points per reservation
+        user.points = (user.points || 0) + pointsEarned;
+        await user.save();
+      }
+    }
+
+    res.status(201).json({ message: `Reservation Created! You earned ${pointsEarned} points.`, pointsEarned, data: newReservation });
   } catch (error) {
     console.error("Reservation Error:", error);
     res.status(500).json({ message: "Server Error" });
@@ -41,7 +53,7 @@ exports.getAllReservations = async (req, res) => {
 exports.updateReservationStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; 
+    const { status } = req.body;
     const booking = await Reservation.findByIdAndUpdate(id, { status }, { new: true });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     res.json({ message: `Booking ${status}`, data: booking });

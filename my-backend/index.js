@@ -16,7 +16,16 @@ const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(cors({ origin: process.env.CLIENT_URL }));
-app.use("/uploads", express.static("uploads"));
+app.use(
+  "/uploads",
+  express.static("uploads", {
+    maxAge: "30d",
+    immutable: true,
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+    },
+  })
+);
 
 
 app.use("/auth", authRouter);
