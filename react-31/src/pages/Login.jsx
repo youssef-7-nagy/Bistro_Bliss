@@ -1,12 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./Login.css";
 import { useDispatch } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { setUser } from "../store/slices/userSlice";
-import { auth, googleProvider, facebookProvider } from "../store/slices/firebase";
-import { signInWithPopup } from "firebase/auth";
 import {
   FaGoogle, FaFacebookF, FaGithub, FaLinkedinIn,
   FaUser, FaEnvelope, FaLock
@@ -16,12 +14,43 @@ export const Login = () => {
   const [isActive, setIsActive] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const regNameRef = useRef(null);
   const regEmailRef = useRef(null);
   const regPasswordRef = useRef(null);
   const loginEmailRef = useRef(null);
   const loginPasswordRef = useRef(null);
+
+  // Handle Google OAuth callback redirect from backend
+  useEffect(() => {
+    const token = searchParams.get("token");
+    const error = searchParams.get("error");
+
+    if (error) {
+      toast.error("Google sign-in failed. Please try again.");
+    }
+
+    if (token) {
+      localStorage.setItem("token", token);
+      axios
+        .get("http://localhost:8080/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((response) => {
+          dispatch(setUser(response.data.data.user));
+          toast.success("Logged in with Google successfully! 🎉");
+          navigate("/Profile", { replace: true });
+        })
+        .catch((err) => {
+          console.error("Error fetching user profile:", err);
+          localStorage.removeItem("token");
+          toast.error("Login session failed. Please log in again.");
+        });
+    }
+  }, [searchParams, dispatch, navigate]);
 
   const handleRegisterClick = () => setIsActive(true);
   const handleLoginClick = () => setIsActive(false);
@@ -78,32 +107,9 @@ export const Login = () => {
     }
   };
 
-  // --- FIREBASE SOCIAL LOGIN ---
-  const handleSocialLogin = async (provider) => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Sync Firebase user with Node.js backend
-      const response = await axios.post("http://localhost:8080/auth/social-login", {
-        email: user.email,
-        name: user.displayName || "User",
-        firebaseUid: user.uid
-      });
-
-      const { data: UserData } = response.data;
-
-      // Save backend's JWT token and start session
-      localStorage.setItem("token", UserData.token);
-      dispatch(setUser(UserData.user));
-
-      toast.success(`Logged in with ${provider.providerId} via backend successfully!`);
-      setTimeout(() => { navigate("/Profile"); }, 1000);
-    } catch (error) {
-      console.error("Social Auth Error:", error);
-      const errorMsg = error.response?.data?.message || error.message || "Social login failed";
-      toast.error(errorMsg);
-    }
+  // --- GOOGLE OAUTH LOGIN ---
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8080/auth/google";
   };
 
   return (
@@ -115,10 +121,18 @@ export const Login = () => {
           <form onSubmit={submitRegister}>
             <h1>Create Account</h1>
             <div className="social-icons">
-              <a href="#" className="icon" onClick={(e) => { e.preventDefault(); handleSocialLogin(googleProvider); }}><FaGoogle /></a>
-              <a href="#" className="icon" onClick={(e) => { e.preventDefault(); handleSocialLogin(facebookProvider); }}><FaFacebookF /></a>
-              <a href="#" className="icon"><FaGithub /></a>
-              <a href="#" className="icon"><FaLinkedinIn /></a>
+              <a href="#" className="icon" title="Continue with Google" onClick={(e) => { e.preventDefault(); handleGoogleLogin(); }}>
+                <FaGoogle />
+              </a>
+              <a href="#" className="icon" title="Facebook (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaFacebookF />
+              </a>
+              <a href="#" className="icon" title="GitHub (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaGithub />
+              </a>
+              <a href="#" className="icon" title="LinkedIn (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaLinkedinIn />
+              </a>
             </div>
             <span>or use your email for registration</span>
             <div className="input-wrapper">
@@ -142,10 +156,18 @@ export const Login = () => {
           <form onSubmit={submitLogin}>
             <h1>Sign In</h1>
             <div className="social-icons">
-              <a href="#" className="icon" onClick={(e) => { e.preventDefault(); handleSocialLogin(googleProvider); }}><FaGoogle /></a>
-              <a href="#" className="icon" onClick={(e) => { e.preventDefault(); handleSocialLogin(facebookProvider); }}><FaFacebookF /></a>
-              <a href="#" className="icon"><FaGithub /></a>
-              <a href="#" className="icon"><FaLinkedinIn /></a>
+              <a href="#" className="icon" title="Continue with Google" onClick={(e) => { e.preventDefault(); handleGoogleLogin(); }}>
+                <FaGoogle />
+              </a>
+              <a href="#" className="icon" title="Facebook (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaFacebookF />
+              </a>
+              <a href="#" className="icon" title="GitHub (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaGithub />
+              </a>
+              <a href="#" className="icon" title="LinkedIn (disabled)" onClick={(e) => e.preventDefault()}>
+                <FaLinkedinIn />
+              </a>
             </div>
             <span>or use your email password</span>
             <div className="input-wrapper">

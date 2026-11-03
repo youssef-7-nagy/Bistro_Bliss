@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");    //connect to mongo db
 const dotenv = require("dotenv");
+const dns = require("dns");
+
+// Use public DNS to prevent local ISP ECONNREFUSED querySrv errors
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 dotenv.config();
 

@@ -311,10 +311,27 @@ async function resetPassword(req, res) {
   }
 }
 
+async function googleCallback(request, response) {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  try {
+    const user = request.user;
+    if (!user) {
+      return response.redirect(`${clientUrl}/login?error=auth_failed`);
+    }
+
+    const token = generateToken(user);
+    return response.redirect(`${clientUrl}/login?token=${token}`);
+  } catch (error) {
+    console.error("Google Callback Error:", error);
+    return response.redirect(`${clientUrl}/login?error=server_error`);
+  }
+}
+
 module.exports = {
   register,
   login,
   socialLogin,
+  googleCallback,
   validateMe,
   updateProfile,
   getAllUsers,

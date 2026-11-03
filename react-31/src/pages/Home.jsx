@@ -128,39 +128,23 @@ export const Home = () => {
             </section>
 
             {/* GALLERY SECTION */}
-            <section className="gallery-animation-section">
+            <section className="gallery-animation-section" data-aos="gallery-entrance" data-aos-offset="80">
                 <div className="gallery-animation-content">
                     <div className="gallery-text-side">
-                        <h2
-                            className="section-title gallery-main-title"
-                            data-aos="gallery-title-enter"
-                            data-aos-offset="50"
-                            data-aos-anchor-placement="top-bottom"
-                        >
+                        <h2 className="section-title gallery-main-title">
                             <span className="gallery-word">Our</span>
                             <span className="gallery-word">Culinary</span>
                             <span className="gallery-word">Masterpieces</span>
                         </h2>
                         <p
                             className="section-desc gallery-main-desc"
-                            data-aos="fade-up"
-                            data-aos-delay="140"
-                            data-aos-offset="50"
-                            data-aos-duration="700"
                             style={{ margin: "0 auto" }}
                         >
                             A feast for the eyes and the palate.
                         </p>
                     </div>
 
-                    <div 
-                        className="expanding-gallery-wrapper" 
-                        data-aos="gallery-slider-enter"
-                        data-aos-anchor=".gallery-main-title"
-                        data-aos-delay="900" 
-                        data-aos-offset="50"
-                        data-aos-duration="900"
-                    >
+                    <div className="expanding-gallery-wrapper">
                         <div className="expanding-item" style={{ backgroundImage: "url('/blue.jpg')" }}></div>
                         <div className="expanding-item" style={{ backgroundImage: "url('/bor.jpg')" }}></div>
                         <div className="expanding-item" style={{ backgroundImage: "url('/chicken.jpg')" }}></div>

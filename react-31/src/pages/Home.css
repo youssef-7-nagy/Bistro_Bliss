@@ -370,42 +370,53 @@
   margin-bottom: 0;
 }
 
-[data-aos="gallery-title-enter"] {
-  opacity: 1;
+/* Base state when entering viewport (before AOS marks as animated) */
+[data-aos="gallery-entrance"]:not(.aos-animate) .gallery-main-title {
+  opacity: 0;
+  transform: translate3d(0, -20px, 0);
 }
+
+[data-aos="gallery-entrance"]:not(.aos-animate) .gallery-main-desc {
+  opacity: 0;
+  transform: translate3d(0, -12px, 0);
+}
+
+[data-aos="gallery-entrance"]:not(.aos-animate) .expanding-item {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+}
+
+/* 1. Main Heading – Smooth downward entrance with subtle fade-in */
+[data-aos="gallery-entrance"].aos-animate .gallery-main-title {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  animation: galleryHeadingDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* 2. Subtitle – Subtle fade-in with slight downward movement */
+[data-aos="gallery-entrance"].aos-animate .gallery-main-desc {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  animation: gallerySubtitleDown 0.55s cubic-bezier(0.16, 1, 0.3, 1) 120ms backwards;
+}
+
+/* 3. Food Images – Sequential left-to-right cascading reveal with tight 100ms stagger */
+[data-aos="gallery-entrance"].aos-animate .expanding-item {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  animation: galleryItemEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(1) { animation-delay: 240ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(2) { animation-delay: 340ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(3) { animation-delay: 440ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(4) { animation-delay: 540ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(5) { animation-delay: 640ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(6) { animation-delay: 740ms; }
+[data-aos="gallery-entrance"].aos-animate .expanding-item:nth-child(7) { animation-delay: 840ms; }
 
 .gallery-word {
   display: inline-block;
-  opacity: 0;
-  transform: translate3d(0, 24px, 0);
-  filter: blur(4px);
-}
-
-[data-aos="gallery-title-enter"].aos-animate .gallery-word {
-  animation: galleryWordReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-[data-aos="gallery-title-enter"].aos-animate .gallery-word:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-[data-aos="gallery-title-enter"].aos-animate .gallery-word:nth-child(2) {
-  animation-delay: 0.23s;
-}
-
-[data-aos="gallery-title-enter"].aos-animate .gallery-word:nth-child(3) {
-  animation-delay: 0.41s;
-}
-
-[data-aos="gallery-slider-enter"] {
-  opacity: 0;
-  transform: translate3d(0, 55px, 0) scale(0.98);
-  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-[data-aos="gallery-slider-enter"].aos-animate {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
 }
 
 .expanding-gallery-wrapper {
@@ -463,16 +474,36 @@
   }
 }
 
-@keyframes galleryWordReveal {
-  from {
+@keyframes galleryHeadingDown {
+  0% {
     opacity: 0;
-    transform: translate3d(0, 24px, 0);
-    filter: blur(4px);
+    transform: translate3d(0, -20px, 0);
   }
-  to {
+  100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
-    filter: blur(0);
+  }
+}
+
+@keyframes gallerySubtitleDown {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes galleryItemEntrance {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -582,18 +613,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-aos="gallery-title-enter"],
-  [data-aos="gallery-slider-enter"] {
-    opacity: 1;
-    transform: none;
-    filter: none;
-    transition: none;
-  }
-
-  .gallery-word {
-    opacity: 1;
-    transform: none;
-    filter: none;
+  [data-aos="gallery-entrance"]:not(.aos-animate) .gallery-main-title,
+  [data-aos="gallery-entrance"]:not(.aos-animate) .gallery-main-desc,
+  [data-aos="gallery-entrance"]:not(.aos-animate) .expanding-item,
+  [data-aos="gallery-entrance"].aos-animate .gallery-main-title,
+  [data-aos="gallery-entrance"].aos-animate .gallery-main-desc,
+  [data-aos="gallery-entrance"].aos-animate .expanding-item {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
     animation: none !important;
+    transition: none !important;
   }
 }

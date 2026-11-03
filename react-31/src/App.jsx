@@ -68,6 +68,10 @@ function App() {
       dispatch(setUser(response.data.data.user));
     } catch (error) {
       console.log(error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        dispatch(setUser(null));
+      }
     } finally {
       setIsLoading(false);
     }

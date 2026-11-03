@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     phone: { type: String, default: "" },
     role: { type: String, enum: ["user", "admin"], default: "user" },
+    googleId: { type: String, default: null },
     points: { type: Number, default: 0 },
     activeReward: { type: String, default: null },
     resetPasswordToken: {
