@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useRef } from "react";
 import { Container, Form, Button } from "react-bootstrap";
 import toast, { Toaster } from "react-hot-toast";
@@ -34,7 +35,7 @@ export const Dashboard = () => {
       const token = localStorage.getItem("token");
 
      
-      const response = await axios.post("http://localhost:8080/products", formData, {
+      const response = await axios.post(`${API_URL}/products`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -55,13 +56,13 @@ export const Profile = () => {
     useEffect(() => {
         const fetchRewardProducts = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/products");
+                const res = await axios.get(`${API_URL}/products`);
                 const products = res.data.data || [];
                 const cake = products.find(p => p.title && p.title.toLowerCase().includes("molten lava cake"));
                 const pizza = products.find(p => p.title && p.title.toLowerCase().includes("pepperoni"));
                 setRewardImages({
-                    cake: cake?.images?.[0] ? `http://localhost:8080/${cake.images[0]}` : null,
-                    pizza: pizza?.images?.[0] ? `http://localhost:8080/${pizza.images[0]}` : null,
+                    cake: cake?.images?.[0] ? `${API_URL}/${cake.images[0]}` : null,
+                    pizza: pizza?.images?.[0] ? `${API_URL}/${pizza.images[0]}` : null,
                 });
             } catch (error) {
                 console.error("Failed to fetch products for reward images", error);
@@ -94,7 +95,7 @@ export const Profile = () => {
     const fetchMyBookings = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:8080/reservation/user/my-reservations`, {
+            const res = await axios.get(`${API_URL}/reservation/user/my-reservations`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMyBookings(res.data);
@@ -104,7 +105,7 @@ export const Profile = () => {
     const fetchMyOrders = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:8080/order/user/my-orders`, {
+            const res = await axios.get(`${API_URL}/order/user/my-orders`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMyOrders(res.data.data);
@@ -128,7 +129,7 @@ export const Profile = () => {
 
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.put("http://localhost:8080/auth/update", editForm, {
+            const res = await axios.put(`${API_URL}/auth/update`, editForm, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
@@ -156,7 +157,7 @@ export const Profile = () => {
     const handleRedeem = async (rewardType, cost) => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.post("http://localhost:8080/auth/redeem",
+            const res = await axios.post(`${API_URL}/auth/redeem`,
                 { rewardType, cost },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

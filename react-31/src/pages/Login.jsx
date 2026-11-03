@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useState, useRef, useEffect } from "react";
 import "./Login.css";
 import { useDispatch } from "react-redux";
@@ -34,7 +35,7 @@ export const Login = () => {
     if (token) {
       localStorage.setItem("token", token);
       axios
-        .get("http://localhost:8080/auth/me", {
+        .get(`${API_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -65,7 +66,7 @@ export const Login = () => {
     };
 
     try {
-      const response = await axios.post("http://localhost:8080/auth/register", data);
+      const response = await axios.post(`${API_URL}/auth/register`, data);
       const { data: UserData } = response.data;
 
       localStorage.setItem("token", UserData.token);
@@ -91,7 +92,7 @@ export const Login = () => {
     };
 
     try {
-      const response = await axios.post("http://localhost:8080/auth/login", data);
+      const response = await axios.post(`${API_URL}/auth/login`, data);
       const { data: UserData } = response.data;
 
       localStorage.setItem("token", UserData.token);
@@ -109,7 +110,7 @@ export const Login = () => {
 
   // --- GOOGLE OAUTH LOGIN ---
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8080/auth/google";
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   return (

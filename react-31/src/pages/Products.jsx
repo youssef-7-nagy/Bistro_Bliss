@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { memo, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -38,7 +39,7 @@ const Products = () => {
       try {
         setLoading(true);
         setErrorMessage("");
-        const response = await axios.get("http://localhost:8080/products", {
+        const response = await axios.get(`${API_URL}/products`, {
           signal: controller.signal,
         });
 

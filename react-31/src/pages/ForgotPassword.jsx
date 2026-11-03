@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useRef, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -24,7 +25,7 @@ export const ForgotPassword = () => {
 
     try {
     
-      const response = await axios.post("http://localhost:8080/auth/forgot-password", { email });
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
 
       toast.success(response.data.message || "Reset link sent! Check your inbox.");
       

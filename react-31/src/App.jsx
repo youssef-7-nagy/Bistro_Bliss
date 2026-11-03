@@ -1,3 +1,4 @@
+import API_URL from "./utils/api";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
@@ -60,7 +61,7 @@ function App() {
 
   async function checkIsloggedIn() {
     try {
-      const response = await axios.get("http://localhost:8080/auth/me", {
+      const response = await axios.get(`${API_URL}/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

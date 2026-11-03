@@ -16,7 +16,25 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "https://velmora-bliss-9iqf.vercel.app",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
 app.use(passport.initialize());
 
 app.use(
@@ -30,6 +48,10 @@ app.use(
   })
 );
 
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "Bistro Bliss Backend is running 🚀" });
+});
+
 app.use("/auth", authRouter);
 app.use("/products", authProducts);
 app.use("/order", orderRouter);
@@ -37,6 +59,10 @@ app.use("/reservation", reservationRouter);
 
 databaseConnection();
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

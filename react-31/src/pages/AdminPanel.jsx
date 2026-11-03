@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
@@ -149,26 +150,26 @@ export const AdminPanel = () => {
     try {
       if (tabName === "overview") {
         const [usersRes, bookingsRes, ordersRes, productsRes] = await Promise.all([
-          axios.get("http://localhost:8080/auth/users", config),
-          axios.get("http://localhost:8080/reservation/admin/all", config),
-          axios.get("http://localhost:8080/order/admin/all", config),
-          axios.get("http://localhost:8080/products"),
+          axios.get(`${API_URL}/auth/users`, config),
+          axios.get(`${API_URL}/reservation/admin/all`, config),
+          axios.get(`${API_URL}/order/admin/all`, config),
+          axios.get(`${API_URL}/products`),
         ]);
         setUsers(usersRes.data.data || []);
         setBookings(bookingsRes.data.data || []);
         setOrders(ordersRes.data.data || []);
         setProducts(productsRes.data.data || []);
       } else if (tabName === "users") {
-        const usersRes = await axios.get("http://localhost:8080/auth/users", config);
+        const usersRes = await axios.get(`${API_URL}/auth/users`, config);
         setUsers(usersRes.data.data || []);
       } else if (tabName === "bookings") {
-        const bookingsRes = await axios.get("http://localhost:8080/reservation/admin/all", config);
+        const bookingsRes = await axios.get(`${API_URL}/reservation/admin/all`, config);
         setBookings(bookingsRes.data.data || []);
       } else if (tabName === "orders") {
-        const ordersRes = await axios.get("http://localhost:8080/order/admin/all", config);
+        const ordersRes = await axios.get(`${API_URL}/order/admin/all`, config);
         setOrders(ordersRes.data.data || []);
       } else if (tabName === "menu") {
-        const productsRes = await axios.get("http://localhost:8080/products");
+        const productsRes = await axios.get(`${API_URL}/products`);
         setProducts(productsRes.data.data || []);
       }
     } catch (error) {
@@ -359,7 +360,7 @@ export const AdminPanel = () => {
   const handleUserRoleChange = async (id, role) => {
     if (userData._id === id && !window.confirm("Change your own role?")) return;
     try {
-      await axios.put(`http://localhost:8080/auth/users/${id}/role`, { role }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API_URL}/auth/users/${id}/role`, { role }, { headers: { Authorization: `Bearer ${token}` } });
       setUsers((prev) => prev.map((user) => (user._id === id ? { ...user, role } : user)));
       toast.success(`Role changed to ${role}.`);
     } catch (error) {
@@ -372,7 +373,7 @@ export const AdminPanel = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingId) {
-        await axios.put(`http://localhost:8080/products/${editingId}`, formData, config);
+        await axios.put(`${API_URL}/products/${editingId}`, formData, config);
         toast.success("Dish updated.");
       } else {
         const data = new FormData();
@@ -382,7 +383,7 @@ export const AdminPanel = () => {
         } else {
           return toast.error("At least one image is required.");
         }
-        await axios.post("http://localhost:8080/products", data, {
+        await axios.post(`${API_URL}/products`, data, {
           headers: { ...config.headers, "Content-Type": "multipart/form-data" },
         });
         toast.success("Dish created.");
@@ -413,7 +414,7 @@ export const AdminPanel = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this dish?")) return;
     try {
-      await axios.delete(`http://localhost:8080/products/${id}`, {
+      await axios.delete(`${API_URL}/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts((prev) => prev.filter((product) => product._id !== id));
@@ -440,7 +441,7 @@ export const AdminPanel = () => {
     try {
       const payload = reordered.map((product) => ({ id: product._id, order: product.order }));
       await axios.put(
-        "http://localhost:8080/products/reorder",
+        `${API_URL}/products/reorder`,
         { items: payload },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -455,7 +456,7 @@ export const AdminPanel = () => {
     try {
       setStatusBusyId(orderId);
       await axios.put(
-        `http://localhost:8080/order/${orderId}/status`,
+        `${API_URL}/order/${orderId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -471,7 +472,7 @@ export const AdminPanel = () => {
   const updateReservationStatus = async (reservationId, status) => {
     try {
       await axios.put(
-        `http://localhost:8080/reservation/${reservationId}/status`,
+        `${API_URL}/reservation/${reservationId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -977,7 +978,7 @@ export const AdminPanel = () => {
                       {products.map((p, index) => (
                           <div key={p._id} className="menu-card-mini">
                               <div className="card-img-holder">
-                                  <img src={p.images?.[0]?`http://localhost:8080/${p.images[0]}`:"https://via.placeholder.com/150"} alt={p.title} loading="lazy" decoding="async" />
+                                  <img src={p.images?.[0]?`${API_URL}/${p.images[0]}`:"https://via.placeholder.com/150"} alt={p.title} loading="lazy" decoding="async" />
                               </div>
                               <div className="menu-info"><h4>{p.title}</h4><span>{p.price} EGP</span></div>
                               <div className="menu-actions" style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>

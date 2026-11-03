@@ -1,7 +1,8 @@
+import BASE_API_URL from "../../utils/api";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/order";
+const API_URL = `${BASE_API_URL}/order`;
 export const CART_STORAGE_KEY = "bistro_bliss_cart_items";
 const CART_STORAGE_PREFIX = `${CART_STORAGE_KEY}_`;
 

@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
@@ -26,7 +27,7 @@ const ProductDetails = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      const response = await axios.get(`http://localhost:8080/products/${id}`);
+      const response = await axios.get(`${API_URL}/products/${id}`);
       setProduct(response.data.data);
     } catch (error) {
       console.log(error);
@@ -99,7 +100,7 @@ const ProductDetails = () => {
           <Col lg={6} className="img-col">
             <img
               className="product-hero-img"
-              src={thumbnail ? `http://localhost:8080/${thumbnail}` : "https://via.placeholder.com/150"}
+              src={thumbnail ? `${API_URL}/${thumbnail}` : "https://via.placeholder.com/150"}
               alt={product?.title}
               loading="lazy"
               decoding="async"

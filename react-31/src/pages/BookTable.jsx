@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
@@ -35,7 +36,7 @@ export const BookTable = () => {
       const token = localStorage.getItem("token");
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
-      const response = await axios.post("http://localhost:8080/reservation", formData, config);
+      const response = await axios.post(`${API_URL}/reservation`, formData, config);
 
       if (response.status === 201) {
         // Generate a random 6-character booking reference for the toast

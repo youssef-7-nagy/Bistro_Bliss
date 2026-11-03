@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -37,7 +38,7 @@ export const ResetPassword = () => {
     try {
       setIsLoading(true);
 
-      const response = await axios.post("http://localhost:8080/auth/reset-password", {
+      const response = await axios.post(`${API_URL}/auth/reset-password`, {
         token,
         password,
         confirmPassword,

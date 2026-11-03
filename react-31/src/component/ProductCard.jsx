@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { memo, useCallback } from 'react';
 import { Card, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -41,7 +42,7 @@ const ProductCard = ({ product, index }) => {
         <img
           className="menu-item-img"
           src={product.images && product.images.length > 0
-            ? `http://localhost:8080/${product.images[0]}`
+            ? `${API_URL}/${product.images[0]}`
             : "https://via.placeholder.com/150"}
           alt={product.title}
           loading="lazy"

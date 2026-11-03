@@ -1,3 +1,4 @@
+import API_URL from "../utils/api";
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -397,7 +398,7 @@ const Cart = () => {
                   <img
                     src={
                       item.images?.[0]
-                        ? `http://localhost:8080/${item.images[0]}`
+                        ? `${API_URL}/${item.images[0]}`
                         : "https://via.placeholder.com/150"
                     }
                     alt={item.title}
