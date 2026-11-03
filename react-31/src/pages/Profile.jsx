@@ -5,7 +5,7 @@ import { logout, setUser } from "../store/slices/userSlice";
 import { resetCartSession } from "../store/slices/CartSlice";
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import './Profile.css';
+import './profile.css';
 
 export const Profile = () => {
     const { islogged, userData } = useSelector((state) => state.user);
