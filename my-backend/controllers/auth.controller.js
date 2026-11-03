@@ -216,7 +216,7 @@ async function forgotPassword(req, res) {
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
-    const clientBaseUrl = readEnv("CLIENT_URL", "http://localhost:5173");
+    const clientBaseUrl = readEnv("CLIENT_URL", readEnv("FRONTEND_URL", "http://localhost:5173"));
     const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}`;
     const senderEmail = readEnv("SMTP_USER");
     const senderPassword = readEnv("SMTP_PASSWORD");
@@ -312,7 +312,7 @@ async function resetPassword(req, res) {
 }
 
 async function googleCallback(request, response) {
-  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
   try {
     const user = request.user;
     if (!user) {

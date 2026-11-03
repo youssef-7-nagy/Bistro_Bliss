@@ -1,19 +1,28 @@
-const mongoose = require("mongoose");    //connect to mongo db
+const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const path = require("path");
 const dns = require("dns");
 
 // Use public DNS to prevent local ISP ECONNREFUSED querySrv errors
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: path.resolve(__dirname, "../.env.production") });
+}
 dotenv.config();
 
 async function databaseConnection() {
   try {
-    await mongoose.connect(process.env.DB_URL);
-    console.log("MongoDB Conntected!");             //if sucess print mongodb connected
+    const mongoUri = process.env.DB_URL || process.env.MONGO_URI;
+    if (!mongoUri) {
+      console.error("❌ MongoDB connection URL (DB_URL or MONGO_URI) is not configured in environment variables.");
+      process.exit(1);
+    }
+    await mongoose.connect(mongoUri);
+    console.log("MongoDB Connected!");
   } catch (error) {
-    console.log(error);    // y-print el error
-    process.exit(1);      ///bey2fel  el process dih mara wahda    
+    console.log(error);
+    process.exit(1);
   }
 }
 

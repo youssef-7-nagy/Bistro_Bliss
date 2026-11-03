@@ -1,6 +1,10 @@
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
+const path = require("path");
 
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: path.resolve(__dirname, "../.env.production") });
+}
 dotenv.config();
 
 function readEnv(key, fallback = "") {

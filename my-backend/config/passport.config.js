@@ -3,6 +3,11 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { User } = require("../models/User");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
+const path = require("path");
+
+if (process.env.NODE_ENV === "production") {
+  require("dotenv").config({ path: path.resolve(__dirname, "../.env.production") });
+}
 require("dotenv").config();
 
 const clientID = process.env.GOOGLE_CLIENT_ID;

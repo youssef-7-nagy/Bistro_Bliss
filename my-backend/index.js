@@ -1,4 +1,9 @@
 const dotenv = require("dotenv");
+const path = require("path");
+
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: path.resolve(__dirname, ".env.production") });
+}
 dotenv.config();
 
 const express = require("express");
@@ -19,6 +24,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
   "http://localhost:5173",
   "https://velmora-bliss-9iqf.vercel.app",
 ].filter(Boolean);
