@@ -5,18 +5,64 @@ const authController = require("../controllers/auth.controller.js");
 const { authMiddleWare } = require("../middlewares/auth.middleware.js");
 const { roleMiddleWare } = require("../middlewares/role.middleware.js");
 
+const PROD_FRONTEND_URL = "https://velmora-bliss-9iqf.vercel.app";
+const PROD_BACKEND_URL = "https://bistro-bliss-cyqt-jmn7dxh7f-youssefn899-2561s-projects.vercel.app";
+
+function getCallbackURL(req) {
+  if (
+    process.env.GOOGLE_CALLBACK_URL &&
+    !process.env.GOOGLE_CALLBACK_URL.includes("localhost") &&
+    !process.env.GOOGLE_CALLBACK_URL.includes("127.0.0.1")
+  ) {
+    return process.env.GOOGLE_CALLBACK_URL;
+  }
+
+  const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+  if (isProduction) {
+    const host = req.get("x-forwarded-host") || req.get("host");
+    const proto = req.get("x-forwarded-proto") || (req.secure ? "https" : "http");
+    if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+      return `${proto}://${host}/auth/google/callback`;
+    }
+    return `${PROD_BACKEND_URL}/auth/google/callback`;
+  }
+
+  return process.env.GOOGLE_CALLBACK_URL || "http://localhost:8080/auth/google/callback";
+}
+
+function getClientRedirectBase(req) {
+  const envUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+  const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+  if (isProduction) {
+    if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+      return envUrl.replace(/\/$/, "");
+    }
+    return PROD_FRONTEND_URL;
+  }
+  return envUrl ? envUrl.replace(/\/$/, "") : "http://localhost:5173";
+}
+
 // Google OAuth routes
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"], session: false })
-);
+router.get("/google", (req, res, next) => {
+  const callbackURL = getCallbackURL(req);
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    callbackURL,
+  })(req, res, next);
+});
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: `${process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=google_failed`,
-  }),
+  (req, res, next) => {
+    const callbackURL = getCallbackURL(req);
+    const clientUrl = getClientRedirectBase(req);
+    passport.authenticate("google", {
+      session: false,
+      callbackURL,
+      failureRedirect: `${clientUrl}/login?error=google_failed`,
+    })(req, res, next);
+  },
   authController.googleCallback
 );
 

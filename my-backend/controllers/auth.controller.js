@@ -216,7 +216,16 @@ async function forgotPassword(req, res) {
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
-    const clientBaseUrl = readEnv("CLIENT_URL", readEnv("FRONTEND_URL", "http://localhost:5173"));
+    const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+    let clientBaseUrl = readEnv("CLIENT_URL", readEnv("FRONTEND_URL", ""));
+    if (isProduction) {
+      if (!clientBaseUrl || clientBaseUrl.includes("localhost") || clientBaseUrl.includes("127.0.0.1")) {
+        clientBaseUrl = "https://velmora-bliss-9iqf.vercel.app";
+      }
+    } else {
+      clientBaseUrl = clientBaseUrl || "http://localhost:5173";
+    }
+    clientBaseUrl = clientBaseUrl.replace(/\/$/, "");
     const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}`;
     const senderEmail = readEnv("SMTP_USER");
     const senderPassword = readEnv("SMTP_PASSWORD");
@@ -312,7 +321,17 @@ async function resetPassword(req, res) {
 }
 
 async function googleCallback(request, response) {
-  const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+  const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+  let clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+  if (isProduction) {
+    if (!clientUrl || clientUrl.includes("localhost") || clientUrl.includes("127.0.0.1")) {
+      clientUrl = "https://velmora-bliss-9iqf.vercel.app";
+    }
+  } else {
+    clientUrl = clientUrl || "http://localhost:5173";
+  }
+  clientUrl = clientUrl.replace(/\/$/, "");
+
   try {
     const user = request.user;
     if (!user) {
@@ -320,7 +339,8 @@ async function googleCallback(request, response) {
     }
 
     const token = generateToken(user);
-    return response.redirect(`${clientUrl}/login?token=${token}`);
+    const role = user.role || "customer";
+    return response.redirect(`${clientUrl}/login?token=${token}&role=${role}`);
   } catch (error) {
     console.error("Google Callback Error:", error);
     return response.redirect(`${clientUrl}/login?error=server_error`);

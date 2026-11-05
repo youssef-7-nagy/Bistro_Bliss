@@ -20,6 +20,9 @@ const reservationRouter = require("./routes/reservation.routes");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Enable trust proxy so Express correctly detects https protocol and host headers behind Vercel/reverse proxies
+app.set("trust proxy", 1);
+
 app.use(express.json());
 
 const allowedOrigins = [

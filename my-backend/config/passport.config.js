@@ -13,12 +13,22 @@ require("dotenv").config();
 const clientID = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
+const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
 const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-const defaultCallback = vercelHost
-  ? `https://${vercelHost}/auth/google/callback`
-  : "http://localhost:8080/auth/google/callback";
+const prodBackendUrl = "https://bistro-bliss-cyqt-jmn7dxh7f-youssefn899-2561s-projects.vercel.app";
 
-const callbackURL = process.env.GOOGLE_CALLBACK_URL || defaultCallback;
+let callbackURL = process.env.GOOGLE_CALLBACK_URL;
+
+if (isProduction) {
+  // In production / Vercel, ensure the callback URL is strictly production and never localhost
+  if (!callbackURL || callbackURL.includes("localhost") || callbackURL.includes("127.0.0.1")) {
+    callbackURL = vercelHost
+      ? `https://${vercelHost}/auth/google/callback`
+      : `${prodBackendUrl}/auth/google/callback`;
+  }
+} else {
+  callbackURL = callbackURL || "http://localhost:8080/auth/google/callback";
+}
 
 if (clientID && clientSecret) {
   passport.use(
@@ -27,6 +37,7 @@ if (clientID && clientSecret) {
         clientID,
         clientSecret,
         callbackURL,
+        proxy: true,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {

@@ -148,11 +148,19 @@ function App() {
 
             <Route
               path="/Login"
-              element={isLoggedIn ? <Navigate to="/Profile" replace /> : <Login />}
+              element={
+                isLoggedIn
+                  ? (userData?.role === "admin" ? <Navigate to="/admin-panel" replace /> : <Navigate to="/Profile" replace />)
+                  : <Login />
+              }
             />
             <Route
               path="/login"
-              element={isLoggedIn ? <Navigate to="/Profile" replace /> : <Login />}
+              element={
+                isLoggedIn
+                  ? (userData?.role === "admin" ? <Navigate to="/admin-panel" replace /> : <Navigate to="/Profile" replace />)
+                  : <Login />
+              }
             />
             <Route
               path="/forgot-password"

@@ -41,9 +41,15 @@ export const Login = () => {
           },
         })
         .then((response) => {
-          dispatch(setUser(response.data.data.user));
+          const user = response.data?.data?.user;
+          dispatch(setUser(user));
           toast.success("Logged in with Google successfully! 🎉");
-          navigate("/Profile", { replace: true });
+          const role = user?.role || searchParams.get("role");
+          if (role === "admin") {
+            navigate("/admin-panel", { replace: true });
+          } else {
+            navigate("/Profile", { replace: true });
+          }
         })
         .catch((err) => {
           console.error("Error fetching user profile:", err);
@@ -98,8 +104,15 @@ export const Login = () => {
       localStorage.setItem("token", UserData.token);
       dispatch(setUser(UserData.user));
 
+      const role = UserData?.user?.role;
       toast.success("Login Successfully");
-      setTimeout(() => { navigate("/Profile"); }, 1000);
+      setTimeout(() => {
+        if (role === "admin") {
+          navigate("/admin-panel");
+        } else {
+          navigate("/Profile");
+        }
+      }, 1000);
 
     } catch (error) {
       console.error("Login Error:", error.response?.data);
