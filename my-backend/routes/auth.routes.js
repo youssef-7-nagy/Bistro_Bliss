@@ -6,7 +6,7 @@ const { authMiddleWare } = require("../middlewares/auth.middleware.js");
 const { roleMiddleWare } = require("../middlewares/role.middleware.js");
 
 const PROD_FRONTEND_URL = "https://velmora-bliss-9iqf.vercel.app";
-const PROD_BACKEND_URL = "https://bistro-bliss-cyqt-jmn7dxh7f-youssefn899-2561s-projects.vercel.app";
+const PROD_BACKEND_URL = "https://bistro-bliss-three.vercel.app";
 
 function getCallbackURL(req) {
   if (

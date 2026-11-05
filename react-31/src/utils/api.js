@@ -1,4 +1,4 @@
-const defaultProdApi = "https://bistro-bliss-cyqt-jmn7dxh7f-youssefn899-2561s-projects.vercel.app";
+const defaultProdApi = "https://bistro-bliss-three.vercel.app";
 
 const isProductionDomain =
   typeof window !== "undefined" &&

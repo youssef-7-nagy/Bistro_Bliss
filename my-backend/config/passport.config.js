@@ -15,7 +15,7 @@ const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
 const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-const prodBackendUrl = "https://bistro-bliss-cyqt-jmn7dxh7f-youssefn899-2561s-projects.vercel.app";
+const prodBackendUrl = "https://bistro-bliss-three.vercel.app";
 
 let callbackURL = process.env.GOOGLE_CALLBACK_URL;
 
