@@ -58,12 +58,23 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Bistro Bliss Backend is running 🚀" });
 });
 
+// Middleware to ensure database is connected before handling any API routes
+app.use(async (req, res, next) => {
+  try {
+    await databaseConnection();
+    next();
+  } catch (err) {
+    console.error("Database connection middleware error:", err.message);
+    res.status(503).json({
+      message: "Database connection failed. Please ensure MongoDB Atlas IP whitelist has 0.0.0.0/0.",
+    });
+  }
+});
+
 app.use("/auth", authRouter);
 app.use("/products", authProducts);
 app.use("/order", orderRouter);
 app.use("/reservation", reservationRouter);
-
-databaseConnection();
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {

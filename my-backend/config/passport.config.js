@@ -12,7 +12,13 @@ require("dotenv").config();
 
 const clientID = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const callbackURL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:8080/auth/google/callback";
+
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+const defaultCallback = vercelHost
+  ? `https://${vercelHost}/auth/google/callback`
+  : "http://localhost:8080/auth/google/callback";
+
+const callbackURL = process.env.GOOGLE_CALLBACK_URL || defaultCallback;
 
 if (clientID && clientSecret) {
   passport.use(
@@ -64,4 +70,3 @@ if (clientID && clientSecret) {
 }
 
 module.exports = passport;
-
