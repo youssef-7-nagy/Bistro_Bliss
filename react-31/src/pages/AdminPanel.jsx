@@ -939,109 +939,155 @@ export const AdminPanel = () => {
                         </div>
                     </div>
                     
-                    <Form onSubmit={handleMenuSubmit} className="perfect-form">
-                        <Row>
-                            <Col md={8}>
-                                <div className="input-group-modern">
-                                    <label>Dish Name</label>
-                                    <Form.Control type="text" placeholder="e.g. Truffle Risotto" name="title" value={formData.title} onChange={(e)=>setFormData({...formData,title:e.target.value})} required />
-                                </div>
-                            </Col>
-                            <Col md={4}>
-                                <div className="input-group-modern">
-                                    <label>Price (EGP)</label>
-                                    <Form.Control type="number" placeholder="0.00" name="price" value={formData.price} onChange={(e)=>setFormData({...formData,price:e.target.value})} required />
-                                </div>
-                            </Col>
-                        </Row>
-
-                        <Row>
-                            <Col md={6}>
-                                <div className="input-group-modern">
-                                    <label>Category</label>
-                                    <Form.Select name="category" value={formData.category} onChange={(e)=>setFormData({...formData,category:e.target.value})}>
-                                        <option value="main course">Main Course</option>
-                                        <option value="breakfast">Breakfast</option>
-                                        <option value="desserts">Desserts</option>
-                                        <option value="drinks">Drinks</option>
-                                    </Form.Select>
-                                </div>
-                            </Col>
-                            <Col md={6}>
-                                <div className="input-group-modern">
-                                    <label>Stock Quantity</label>
-                                    <Form.Control type="number" placeholder="Available Qty" name="stock" value={formData.stock} onChange={(e)=>setFormData({...formData,stock:e.target.value})} />
-                                </div>
-                            </Col>
-                        </Row>
-
-                        <div className="input-group-modern file-group">
-                            <label>Upload Image</label>
-                            <div
-                              className={`custom-file-upload ${isDragActive ? "drag-active" : ""} ${selectedImages.length ? "has-files" : ""}`}
-                              onDragEnter={(event) => {
-                                event.preventDefault();
-                                setIsDragActive(true);
-                              }}
-                              onDragOver={(event) => {
-                                event.preventDefault();
-                                setIsDragActive(true);
-                              }}
-                              onDragLeave={(event) => {
-                                event.preventDefault();
-                                if (event.currentTarget.contains(event.relatedTarget)) return;
-                                setIsDragActive(false);
-                              }}
-                              onDrop={(event) => {
-                                event.preventDefault();
-                                setIsDragActive(false);
-                                setMenuUploadFiles(event.dataTransfer.files);
-                              }}
-                            >
+                    <Form onSubmit={handleMenuSubmit} className="perfect-form dish-builder-form">
+                        {/* Row 1: Dish Name (Left - Wider) + Price (Right) */}
+                        <div className="dish-form-row row-name-price">
+                            <div className="input-group-modern col-name">
+                                <label htmlFor="dish-title">Dish Name</label>
                                 <Form.Control
-                                  type="file"
-                                  multiple
-                                  accept="image/*"
-                                  ref={imagesRef}
-                                  className="file-input"
-                                  onChange={(event) => setMenuUploadFiles(event.target.files)}
+                                  id="dish-title"
+                                  type="text"
+                                  placeholder="e.g. Truffle Risotto"
+                                  name="title"
+                                  value={formData.title}
+                                  onChange={(e)=>setFormData({...formData,title:e.target.value})}
+                                  required
                                 />
-                                <div className="upload-content">
-                                    <span className="upload-icon" aria-hidden="true">
-                                      {isDragActive ? <FiUploadCloud /> : <FiImage />}
-                                    </span>
-                                    <span>
-                                      {isDragActive
-                                        ? "Drop images here"
-                                        : selectedImages.length
-                                          ? `${selectedImages.length} image${selectedImages.length > 1 ? "s" : ""} selected`
-                                          : "Drag & Drop or Click to Upload"}
-                                    </span>
-                                </div>
-                                {selectedImages.length > 0 && (
-                                  <button type="button" className="clear-upload-btn" onClick={clearMenuUploadFiles}>
-                                    Clear
-                                  </button>
-                                )}
                             </div>
-                            {imagePreviews.length > 0 && (
-                              <div className="upload-preview-grid">
-                                {imagePreviews.map((preview) => (
-                                  <figure key={preview.id} className="upload-preview-card">
-                                    <img src={preview.url} alt={preview.name} loading="lazy" decoding="async" />
-                                    <figcaption>
-                                      <span title={preview.name}>{preview.name}</span>
-                                      <small>{formatFileSize(preview.size)}</small>
-                                    </figcaption>
-                                  </figure>
-                                ))}
-                              </div>
-                            )}
+                            <div className="input-group-modern col-price">
+                                <label htmlFor="dish-price">Price (EGP)</label>
+                                <Form.Control
+                                  id="dish-price"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  name="price"
+                                  value={formData.price}
+                                  onChange={(e)=>setFormData({...formData,price:e.target.value})}
+                                  required
+                                />
+                            </div>
                         </div>
 
-                        <div className="input-group-modern">
-                            <label>Description</label>
-                            <Form.Control as="textarea" rows={4} placeholder="Describe the flavors and ingredients..." name="description" value={formData.description} onChange={(e)=>setFormData({...formData,description:e.target.value})} />
+                        {/* Row 2: Category (Left) + Stock Quantity (Right) */}
+                        <div className="dish-form-row row-cat-stock">
+                            <div className="input-group-modern col-category">
+                                <label htmlFor="dish-category">Category</label>
+                                <Form.Select
+                                  id="dish-category"
+                                  name="category"
+                                  value={formData.category}
+                                  onChange={(e)=>setFormData({...formData,category:e.target.value})}
+                                >
+                                    <option value="main course">Main Course</option>
+                                    <option value="breakfast">Breakfast</option>
+                                    <option value="desserts">Desserts</option>
+                                    <option value="drinks">Drinks</option>
+                                </Form.Select>
+                            </div>
+                            <div className="input-group-modern col-stock">
+                                <label htmlFor="dish-stock">Stock Quantity</label>
+                                <Form.Control
+                                  id="dish-stock"
+                                  type="number"
+                                  min="0"
+                                  placeholder="Available Qty"
+                                  name="stock"
+                                  value={formData.stock}
+                                  onChange={(e)=>setFormData({...formData,stock:e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Row 3: Upload Image (Left) + Description (Right) */}
+                        <div className="dish-form-row row-media-desc">
+                            <div className="input-group-modern col-upload file-group">
+                                <div className="col-upload-header">
+                                    <label>Upload Image</label>
+                                    {selectedImages.length > 0 && (
+                                      <button type="button" className="clear-upload-text-btn" onClick={clearMenuUploadFiles}>
+                                        Remove Image
+                                      </button>
+                                    )}
+                                </div>
+                                <div
+                                  className={`custom-file-upload ${isDragActive ? "drag-active" : ""} ${selectedImages.length ? "has-files" : ""}`}
+                                  onDragEnter={(event) => {
+                                    event.preventDefault();
+                                    setIsDragActive(true);
+                                  }}
+                                  onDragOver={(event) => {
+                                    event.preventDefault();
+                                    setIsDragActive(true);
+                                  }}
+                                  onDragLeave={(event) => {
+                                    event.preventDefault();
+                                    if (event.currentTarget.contains(event.relatedTarget)) return;
+                                    setIsDragActive(false);
+                                  }}
+                                  onDrop={(event) => {
+                                    event.preventDefault();
+                                    setIsDragActive(false);
+                                    setMenuUploadFiles(event.dataTransfer.files);
+                                  }}
+                                >
+                                    <Form.Control
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      ref={imagesRef}
+                                      className="file-input"
+                                      onChange={(event) => setMenuUploadFiles(event.target.files)}
+                                    />
+                                    <div className="upload-content">
+                                        <span className="upload-icon" aria-hidden="true">
+                                          {isDragActive ? <FiUploadCloud /> : <FiImage />}
+                                        </span>
+                                        <div className="upload-text-wrap">
+                                            <strong>
+                                              {isDragActive
+                                                ? "Drop images here"
+                                                : selectedImages.length
+                                                  ? `${selectedImages.length} image${selectedImages.length > 1 ? "s" : ""} selected`
+                                                  : "Drag & Drop or Click to Upload"}
+                                            </strong>
+                                            <small>Supports PNG, JPG, WEBP (Max 5)</small>
+                                        </div>
+                                    </div>
+                                    {selectedImages.length > 0 && (
+                                      <button type="button" className="clear-upload-btn" onClick={(e) => { e.stopPropagation(); clearMenuUploadFiles(); }}>
+                                        Clear
+                                      </button>
+                                    )}
+                                </div>
+                                {imagePreviews.length > 0 && (
+                                  <div className="upload-preview-grid">
+                                    {imagePreviews.map((preview) => (
+                                      <figure key={preview.id} className="upload-preview-card">
+                                        <img src={preview.url} alt={preview.name} loading="lazy" decoding="async" />
+                                        <figcaption>
+                                          <span title={preview.name}>{preview.name}</span>
+                                          <small>{formatFileSize(preview.size)}</small>
+                                        </figcaption>
+                                      </figure>
+                                    ))}
+                                  </div>
+                                )}
+                            </div>
+
+                            <div className="input-group-modern col-desc">
+                                <label htmlFor="dish-description">Description</label>
+                                <Form.Control
+                                  id="dish-description"
+                                  as="textarea"
+                                  rows={5}
+                                  placeholder="Describe the flavors, ingredients, and culinary style..."
+                                  name="description"
+                                  value={formData.description}
+                                  onChange={(e)=>setFormData({...formData,description:e.target.value})}
+                                />
+                            </div>
                         </div>
 
                         {dishUploadState.visible && (
