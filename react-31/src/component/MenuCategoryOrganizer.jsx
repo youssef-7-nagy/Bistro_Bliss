@@ -3,7 +3,7 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   closestCenter,
   useSensor,
@@ -109,7 +109,7 @@ const CategoryDishCardContent = ({
           aria-label={isAvailable ? `Hide ${product.title}` : `Show ${product.title}`}
         >
           {isAvailable ? <FiEye /> : <FiEyeOff />}
-          <span>{isAvailable ? "Available" : "Hidden"}</span>
+          <span className="btn-dish-action-label">{isAvailable ? "Available" : "Hidden"}</span>
         </button>
 
         <div className="organizer-dish-card__crud">
@@ -196,11 +196,11 @@ const CategorySection = ({
   const [activeDragId, setActiveDragId] = useState(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 6 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 120, tolerance: 8 },
+      activationConstraint: { delay: 140, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -323,7 +323,7 @@ const CategorySection = ({
                 items={visibleItems.map((item) => item._id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="category-dishes-grid">
+                <div className={`category-dishes-grid ${activeDragId ? "is-sorting" : ""}`}>
                   {visibleItems.map((product, index) => (
                     <SortableDishCard
                       key={product._id}

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Form, Button, Row, Col } from "react-bootstrap";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { FiCheck, FiChevronLeft, FiChevronRight, FiEdit2, FiImage, FiPlus, FiTrash2, FiUploadCloud, FiX } from "react-icons/fi";
+import { FiBookOpen, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiEdit2, FiGrid, FiImage, FiMenu, FiPlus, FiRefreshCw, FiShoppingBag, FiTrash2, FiUploadCloud, FiUsers, FiX } from "react-icons/fi";
 import { MenuCategoryOrganizer } from '../component/MenuCategoryOrganizer';
 import './AdminPanel.css'; 
 
@@ -28,6 +28,17 @@ export const AdminPanel = () => {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('overview'); 
   const [selectedMetric, setSelectedMetric] = useState('orders'); 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    tone: "danger",
+    onConfirm: null,
+  });
+  const [expandedOrderIds, setExpandedOrderIds] = useState({});
+  const [formError, setFormError] = useState("");
 
   // --- DATA ---
   const [users, setUsers] = useState([]);
@@ -66,6 +77,7 @@ export const AdminPanel = () => {
   });
   const imagesRef = useRef();
   const uploadHideTimerRef = useRef(null);
+  const formCardRef = useRef(null);
 
   // --- COLORS ---
   const COLORS = ['#4361ee', '#3a0ca3', '#f72585', '#4cc9f0', '#10b981', '#f59e0b'];
@@ -86,7 +98,7 @@ export const AdminPanel = () => {
       const transfer = new DataTransfer();
       files.forEach((file) => transfer.items.add(file));
       imagesRef.current.files = transfer.files;
-    } catch (error) {
+    } catch {
       if (files.length === 0) {
         imagesRef.current.value = "";
       }
@@ -194,6 +206,75 @@ export const AdminPanel = () => {
   useEffect(() => {
     fetchData(activeTab);
   }, [activeTab, fetchData]);
+
+  useEffect(() => {
+    const shouldLockScroll = isSidebarOpen || confirmDialog.open;
+    if (!shouldLockScroll) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (confirmDialog.open) {
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+        } else if (isSidebarOpen) {
+          setIsSidebarOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSidebarOpen, confirmDialog.open]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1025) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const ADMIN_TABS = useMemo(() => [
+    { id: "overview", label: "Overview", icon: FiGrid },
+    { id: "bookings", label: "Bookings", icon: FiCalendar },
+    { id: "orders", label: "Orders", icon: FiShoppingBag },
+    { id: "users", label: "Users", icon: FiUsers },
+    { id: "menu", label: "Menu", icon: FiBookOpen },
+  ], []);
+
+  const handleSelectTab = useCallback((tabId) => {
+    setActiveTab(tabId);
+    setIsSidebarOpen(false);
+  }, []);
+
+  const closeConfirmDialog = useCallback(() => {
+    setConfirmDialog((prev) => ({ ...prev, open: false, onConfirm: null }));
+  }, []);
+
+  const openConfirmDialog = useCallback(({ title, message, confirmLabel = "Confirm", tone = "danger", onConfirm }) => {
+    setConfirmDialog({
+      open: true,
+      title,
+      message,
+      confirmLabel,
+      tone,
+      onConfirm,
+    });
+  }, []);
+
+  const toggleExpandOrder = useCallback((orderId) => {
+    setExpandedOrderIds((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  }, []);
 
   // --- CHART DATA GENERATOR ---
   const getChartData = () => {
@@ -368,19 +449,43 @@ export const AdminPanel = () => {
     toast.info("Users exported successfully.");
   };
 
-  const handleUserRoleChange = async (id, role) => {
-    if (userData._id === id && !window.confirm("Change your own role?")) return;
+  const executeUserRoleChange = async (id, role) => {
     try {
+      setStatusBusyId(id);
       await axios.put(`${API_URL}/auth/users/${id}/role`, { role }, { headers: { Authorization: `Bearer ${token}` } });
       setUsers((prev) => prev.map((user) => (user._id === id ? { ...user, role } : user)));
       toast.success(`Role changed to ${role}.`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update user role.");
+    } finally {
+      setStatusBusyId("");
     }
   };
 
+  const handleUserRoleChange = (id, role) => {
+    if (userData?._id === id) {
+      openConfirmDialog({
+        title: "Change your own role?",
+        message: "Changing your own role may revoke access to the Admin Panel immediately.",
+        confirmLabel: "Change Role",
+        tone: "danger",
+        onConfirm: () => executeUserRoleChange(id, role),
+      });
+      return;
+    }
+    executeUserRoleChange(id, role);
+  };
+
+  const resetMenuForm = useCallback(() => {
+    setFormData({ title: "", description: "", price: "", stock: "", category: "main course" });
+    setEditingId(null);
+    setFormError("");
+    clearMenuUploadFiles();
+  }, [clearMenuUploadFiles]);
+
   const handleMenuSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
     if (uploadHideTimerRef.current) {
       clearTimeout(uploadHideTimerRef.current);
       uploadHideTimerRef.current = null;
@@ -406,7 +511,10 @@ export const AdminPanel = () => {
         if (selectedImages.length > 0) {
           selectedImages.forEach((file) => data.append("images", file));
         } else {
-          return toast.error("At least one image is required.");
+          const msg = "Please upload at least one dish image before publishing.";
+          setFormError(msg);
+          toast.error(msg);
+          return;
         }
 
         setDishUploadState({
@@ -444,12 +552,11 @@ export const AdminPanel = () => {
         setDishUploadState((prev) => ({ ...prev, visible: false }));
       }, 4500);
 
-      setFormData({ title: "", description: "", price: "", stock: "", category: "main course" });
-      setEditingId(null);
-      clearMenuUploadFiles();
+      resetMenuForm();
       fetchData("menu");
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Failed to save dish.";
+      setFormError(errorMsg);
       setDishUploadState({
         visible: true,
         progress: 0,
@@ -463,6 +570,7 @@ export const AdminPanel = () => {
 
   const handleEditClick = (product) => {
     clearMenuUploadFiles();
+    setFormError("");
     setEditingId(product._id);
     setFormData({
       title: product.title,
@@ -471,20 +579,33 @@ export const AdminPanel = () => {
       stock: product.stock,
       category: product.category,
     });
-    window.scrollTo(0, 0);
+    if (formCardRef.current) {
+      formCardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this dish?")) return;
+  const executeDeleteDish = async (id) => {
     try {
       await axios.delete(`${API_URL}/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts((prev) => prev.filter((product) => product._id !== id));
       toast.success("Dish removed.");
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete dish.");
     }
+  };
+
+  const handleDelete = (id) => {
+    openConfirmDialog({
+      title: "Delete this dish?",
+      message: "This will permanently remove the dish from your menu and cannot be undone.",
+      confirmLabel: "Delete Dish",
+      tone: "danger",
+      onConfirm: () => executeDeleteDish(id),
+    });
   };
 
   const handleReorderCategory = async (categoryName, reorderedCategoryItems) => {
@@ -515,7 +636,7 @@ export const AdminPanel = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`${categoryName} order saved.`);
-    } catch (error) {
+    } catch {
       setProducts(previousProducts);
       toast.error("Failed to save category order.");
     } finally {
@@ -538,7 +659,7 @@ export const AdminPanel = () => {
         )
       );
       toast.success(nextAvailable ? "Dish marked as available." : "Dish marked as unavailable.");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update availability.");
     } finally {
       setBusyToggleId("");
@@ -555,7 +676,7 @@ export const AdminPanel = () => {
       );
       setOrders((prev) => prev.map((order) => (order._id === orderId ? { ...order, status } : order)));
       toast.success(`Order marked as ${status}.`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update order.");
     } finally {
       setStatusBusyId("");
@@ -564,6 +685,7 @@ export const AdminPanel = () => {
 
   const updateReservationStatus = async (reservationId, status) => {
     try {
+      setStatusBusyId(reservationId);
       await axios.put(
         `${API_URL}/reservation/${reservationId}/status`,
         { status },
@@ -573,23 +695,87 @@ export const AdminPanel = () => {
         prev.map((booking) => (booking._id === reservationId ? { ...booking, status } : booking))
       );
       toast.success(`Reservation set to ${status}.`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update reservation.");
+    } finally {
+      setStatusBusyId("");
     }
   };
 
+  const chartData = getChartData();
+  const chartTotal = chartData.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
+  const activeTabMeta = ADMIN_TABS.find((tab) => tab.id === activeTab) || ADMIN_TABS[0];
+
   return (
     <div className="admin-wrapper">
-      <aside className="admin-sidebar">
-        <div className="admin-profile"><h3>Admin Panel</h3><p>Welcome, {userData?.name}</p></div>
+      {isSidebarOpen && (
+        <div
+          className="admin-drawer-backdrop"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        id="admin-navigation-drawer"
+        className={`admin-sidebar ${isSidebarOpen ? "is-open" : ""}`}
+        aria-label="Admin navigation"
+      >
+        <div className="admin-profile">
+          <div className="admin-profile-text">
+            <h3>Admin Panel</h3>
+            <p>Welcome, {userData?.name}</p>
+          </div>
+          <button
+            type="button"
+            className="admin-drawer-close"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close navigation menu"
+          >
+            <FiX />
+          </button>
+        </div>
         <nav className="admin-nav">
-            {['overview','bookings','orders','users','menu'].map(t => (
-                <button key={t} className={activeTab === t ? 'active' : ''} onClick={() => setActiveTab(t)}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>
+            {ADMIN_TABS.map(({ id, label, icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={activeTab === id ? 'active' : ''}
+                  aria-current={activeTab === id ? 'page' : undefined}
+                  onClick={() => handleSelectTab(id)}
+                >
+                  {React.createElement(icon, { className: "admin-nav-icon", "aria-hidden": true })}
+                  <span>{label}</span>
+                </button>
             ))}
         </nav>
       </aside>
 
       <main className="admin-main">
+        <div className="admin-mobile-topbar">
+          <button
+            type="button"
+            className="admin-mobile-menu-btn"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open admin navigation"
+            aria-expanded={isSidebarOpen}
+            aria-controls="admin-navigation-drawer"
+          >
+            <FiMenu />
+          </button>
+          <div className="admin-mobile-topbar-title">
+            <span className="admin-mobile-kicker">Admin Panel</span>
+            <strong>{activeTabMeta.label}</strong>
+          </div>
+          <button
+            type="button"
+            className="admin-mobile-refresh-btn"
+            onClick={() => fetchData(activeTab)}
+            aria-label={`Refresh ${activeTabMeta.label}`}
+          >
+            <FiRefreshCw />
+          </button>
+        </div>
         {activeTab !== 'overview' && activeTab !== 'menu' && (
              <div className="admin-header-actions">
                 <input
@@ -645,18 +831,50 @@ export const AdminPanel = () => {
                     </div>
                     
                     <div className="chart-section">
-                        <h3>{getChartTitle()}</h3>
-                        <div className="chart-wrapper">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie data={getChartData()} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value">
-                                        {getChartData().map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend verticalAlign="bottom" height={36}/>
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <div className="chart-section-header">
+                          <h3>{getChartTitle()}</h3>
+                          <span className="chart-total-pill">{chartTotal} total</span>
                         </div>
+                        {chartTotal === 0 ? (
+                          <div className="category-empty-state">
+                            <p>No analytics data available for this metric yet.</p>
+                          </div>
+                        ) : (
+                          <div className="chart-content-grid">
+                            <div className="chart-wrapper">
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <PieChart>
+                                        <Pie data={chartData} cx="50%" cy="50%" innerRadius={58} outerRadius={84} fill="#8884d8" paddingAngle={4} dataKey="value">
+                                            {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <ul className="chart-breakdown-list" aria-label={`${getChartTitle()} breakdown`}>
+                              {chartData.map((entry, index) => {
+                                const pct = chartTotal > 0 ? Math.round((Number(entry.value || 0) / chartTotal) * 100) : 0;
+                                return (
+                                  <li key={entry.name} className="chart-breakdown-item">
+                                    <div className="chart-breakdown-label">
+                                      <span
+                                        className="chart-breakdown-dot"
+                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                        aria-hidden="true"
+                                      />
+                                      <span>{entry.name}</span>
+                                    </div>
+                                    <div className="chart-breakdown-values">
+                                      <strong>{entry.value}</strong>
+                                      <small>{pct}%</small>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
                     </div>
                   </>
                 )}
@@ -683,37 +901,78 @@ export const AdminPanel = () => {
                     <p>Try changing the search term.</p>
                   </div>
                 ) : (
-                  <table className="admin-table">
-                      <thead><tr><th>Name</th><th>Date</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
-                      <tbody>
-                          {filteredBookings.map(b => (
-                              <tr key={b._id}>
-                                <td>{b.name}</td>
-                                <td>{b.date}</td>
-                                <td>{b.guests}</td>
-                                <td><span className={`badge ${b.status}`}>{b.status}</span></td>
-                                <td>
-                                  <button
-                                    className="btn-icon check"
-                                    onClick={() => updateReservationStatus(b._id, 'Accepted')}
-                                    title="Accept reservation"
-                                    aria-label="Accept reservation"
-                                  >
-                                    <FiCheck />
-                                  </button>
-                                  <button
-                                    className="btn-icon cross"
-                                    onClick={() => updateReservationStatus(b._id, 'Rejected')}
-                                    title="Reject reservation"
-                                    aria-label="Reject reservation"
-                                  >
-                                    <FiX />
-                                  </button>
-                                </td>
-                              </tr>
-                          ))}
-                      </tbody>
-                  </table>
+                  <>
+                    <div className="admin-table-scroll bookings-desktop-view">
+                      <table className="admin-table">
+                          <thead><tr><th>Name</th><th>Date</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
+                          <tbody>
+                              {filteredBookings.map(b => (
+                                  <tr key={b._id}>
+                                    <td>{b.name}</td>
+                                    <td>{b.date}</td>
+                                    <td>{b.guests}</td>
+                                    <td><span className={`badge ${b.status}`}>{b.status || "pending"}</span></td>
+                                    <td>
+                                      <button
+                                        type="button"
+                                        className="btn-icon check"
+                                        onClick={() => updateReservationStatus(b._id, 'Accepted')}
+                                        disabled={statusBusyId === b._id}
+                                        title="Accept reservation"
+                                        aria-label={`Accept reservation for ${b.name}`}
+                                      >
+                                        <FiCheck />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-icon cross"
+                                        onClick={() => updateReservationStatus(b._id, 'Rejected')}
+                                        disabled={statusBusyId === b._id}
+                                        title="Reject reservation"
+                                        aria-label={`Reject reservation for ${b.name}`}
+                                      >
+                                        <FiX />
+                                      </button>
+                                    </td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                    </div>
+
+                    <div className="bookings-mobile-view">
+                      {filteredBookings.map((b) => (
+                        <article key={b._id} className="admin-mobile-card booking-mobile-card">
+                          <header className="admin-mobile-card__header">
+                            <strong>{b.name}</strong>
+                            <span className={`badge ${b.status}`}>{b.status || "pending"}</span>
+                          </header>
+                          <div className="admin-mobile-card__meta">
+                            <span>Date: <strong>{b.date}</strong></span>
+                            <span>Guests: <strong>{b.guests}</strong></span>
+                          </div>
+                          <div className="booking-mobile-actions">
+                            <button
+                              type="button"
+                              className="btn-mobile-action accept"
+                              onClick={() => updateReservationStatus(b._id, 'Accepted')}
+                              disabled={statusBusyId === b._id || b.status === 'Accepted'}
+                            >
+                              <FiCheck /> Accept
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-mobile-action reject"
+                              onClick={() => updateReservationStatus(b._id, 'Rejected')}
+                              disabled={statusBusyId === b._id || b.status === 'Rejected'}
+                            >
+                              <FiX /> Reject
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </>
                 )}
             </div>
         )}
@@ -804,7 +1063,7 @@ export const AdminPanel = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="orders-desktop-view">
+                    <div className="admin-table-scroll orders-desktop-view">
                       <table className="admin-table orders-table">
                           <thead><tr><th>ID</th><th>User</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Confirmed</th><th>Kitchen</th></tr></thead>
                           <tbody>
@@ -853,35 +1112,65 @@ export const AdminPanel = () => {
                     </div>
 
                     <div className="orders-mobile-view">
-                      {filteredOrders.map((order) => (
-                        <article key={order._id} className="order-mobile-card">
-                          <header className="order-mobile-header">
-                            <strong>#{order._id.slice(-6)}</strong>
-                            <span className={`badge ${order.status}`}>{order.status}</span>
-                          </header>
-                          <div className="order-mobile-meta">
-                            <span>{order.userName || "Guest"}</span>
-                            <span>{Number(order.totalAmount || 0).toFixed(2)} EGP</span>
-                            <span>{order.paymentMethod || "cash"}</span>
-                            <span>{formatConfirmedDateTime(order.createdAt)}</span>
-                          </div>
-                          <div className="order-mobile-items">
-                            {(order.items || []).map((item, idx) => (
-                              <div key={item._id || `${order._id}-m-${idx}`} className="order-item-row">
-                                <span>{item.quantity}x {item.title}</span>
-                                {item.specialInstructions && (
-                                  <small className="order-item-custom-note">Customization: {item.specialInstructions}</small>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <div className="quick-action-group mobile">
-                            <button className="btn-quick neutral" onClick={() => updateOrderStatus(order._id, "delivered")} disabled={statusBusyId === order._id || normalize(order.status) === "delivered"}>Deliver</button>
-                            <button className="btn-quick success" onClick={() => updateOrderStatus(order._id, "completed")} disabled={statusBusyId === order._id || normalize(order.status) === "completed"}>Complete</button>
-                            <button className="btn-quick danger" onClick={() => updateOrderStatus(order._id, "cancelled")} disabled={statusBusyId === order._id || normalize(order.status) === "cancelled"}>Cancel</button>
-                          </div>
-                        </article>
-                      ))}
+                      {filteredOrders.map((order) => {
+                        const itemsList = order.items || [];
+                        const isExpanded = Boolean(expandedOrderIds[order._id]);
+                        const visibleItems = isExpanded ? itemsList : itemsList.slice(0, 3);
+                        const hiddenCount = Math.max(0, itemsList.length - 3);
+
+                        return (
+                          <article key={order._id} className="order-mobile-card">
+                            <header className="order-mobile-header">
+                              <strong>#{order._id.slice(-6)}</strong>
+                              <span className={`badge ${order.status}`}>{order.status}</span>
+                            </header>
+                            <div className="order-mobile-meta">
+                              <span>{order.userName || "Guest"}</span>
+                              <span><strong>{Number(order.totalAmount || 0).toFixed(2)} EGP</strong></span>
+                              <span className="payment-pill">{order.paymentMethod || "cash"}</span>
+                              <span>{formatConfirmedDateTime(order.createdAt)}</span>
+                            </div>
+                            <div className="order-mobile-items">
+                              {visibleItems.map((item, idx) => (
+                                <div key={item._id || `${order._id}-m-${idx}`} className="order-item-row">
+                                  <span>{item.quantity}x {item.title}</span>
+                                  {item.specialInstructions && (
+                                    <small className="order-item-custom-note">Customization: {item.specialInstructions}</small>
+                                  )}
+                                </div>
+                              ))}
+                              {hiddenCount > 0 && (
+                                <button
+                                  type="button"
+                                  className="order-items-toggle-btn"
+                                  onClick={() => toggleExpandOrder(order._id)}
+                                >
+                                  {isExpanded ? "Show fewer items" : `Show ${hiddenCount} more item${hiddenCount > 1 ? "s" : ""}`}
+                                </button>
+                              )}
+                            </div>
+                            <div className="order-mobile-status-row">
+                              <select
+                                className="status-select order-mobile-select"
+                                aria-label={`Status for order ${order._id.slice(-6)}`}
+                                value={order.status}
+                                onChange={(e) => updateOrderStatus(order._id, e.target.value)}
+                                disabled={statusBusyId === order._id}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                            </div>
+                            <div className="quick-action-group mobile">
+                              <button type="button" className="btn-quick neutral" onClick={() => updateOrderStatus(order._id, "delivered")} disabled={statusBusyId === order._id || normalize(order.status) === "delivered"}>Deliver</button>
+                              <button type="button" className="btn-quick success" onClick={() => updateOrderStatus(order._id, "completed")} disabled={statusBusyId === order._id || normalize(order.status) === "completed"}>Complete</button>
+                              <button type="button" className="btn-quick danger" onClick={() => updateOrderStatus(order._id, "cancelled")} disabled={statusBusyId === order._id || normalize(order.status) === "cancelled"}>Cancel</button>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -908,19 +1197,48 @@ export const AdminPanel = () => {
                     <p>Try changing the search term.</p>
                   </div>
                 ) : (
-                  <table className="admin-table">
-                      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Change</th></tr></thead>
-                      <tbody>
-                          {filteredUsers.map(u => (
-                              <tr key={u._id}>
-                                <td>{u.name}</td>
-                                <td>{u.email}</td>
-                                <td><span className={`badge role ${u.role==='admin'?'admin-badge':'user-badge'}`}>{u.role}</span></td>
-                                <td><select className="status-select" value={u.role} onChange={(e)=>handleUserRoleChange(u._id, e.target.value)} disabled={u._id===userData._id}><option value="user">User</option><option value="admin">Admin</option></select></td>
-                              </tr>
-                          ))}
-                      </tbody>
-                  </table>
+                  <>
+                    <div className="admin-table-scroll users-desktop-view">
+                      <table className="admin-table">
+                          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Change</th></tr></thead>
+                          <tbody>
+                              {filteredUsers.map(u => (
+                                  <tr key={u._id}>
+                                    <td>{u.name}</td>
+                                    <td className="admin-email-cell">{u.email}</td>
+                                    <td><span className={`badge role ${u.role==='admin'?'admin-badge':'user-badge'}`}>{u.role}</span></td>
+                                    <td><select className="status-select" aria-label={`Role for ${u.name}`} value={u.role} onChange={(e)=>handleUserRoleChange(u._id, e.target.value)} disabled={u._id===userData._id || statusBusyId===u._id}><option value="user">User</option><option value="admin">Admin</option></select></td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                    </div>
+
+                    <div className="users-mobile-view">
+                      {filteredUsers.map((u) => (
+                        <article key={u._id} className="admin-mobile-card user-mobile-card">
+                          <header className="admin-mobile-card__header">
+                            <strong>{u.name}</strong>
+                            <span className={`badge role ${u.role==='admin'?'admin-badge':'user-badge'}`}>{u.role}</span>
+                          </header>
+                          <p className="user-mobile-email">{u.email}</p>
+                          <div className="user-mobile-role-row">
+                            <label htmlFor={`mobile-role-${u._id}`}>Account Role</label>
+                            <select
+                              id={`mobile-role-${u._id}`}
+                              className="status-select user-mobile-select"
+                              value={u.role}
+                              onChange={(e) => handleUserRoleChange(u._id, e.target.value)}
+                              disabled={u._id === userData._id || statusBusyId === u._id}
+                            >
+                              <option value="user">User</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </>
                 )}
             </div>
         )}
@@ -928,7 +1246,7 @@ export const AdminPanel = () => {
         {/* MENU */}
         {activeTab === 'menu' && (
             <div className="panel-section">
-                <div className="menu-form-card">
+                <div className="menu-form-card" ref={formCardRef}>
                     <div className="form-header">
                         <div className="form-icon" aria-hidden="true">
                           {editingId ? <FiEdit2 /> : <FiPlus />}
@@ -940,7 +1258,7 @@ export const AdminPanel = () => {
                     </div>
                     
                     <Form onSubmit={handleMenuSubmit} className="perfect-form dish-builder-form">
-                        {/* Row 1: Dish Name (Left - Wider) + Price (Right) */}
+                        {/* Row 1: Dish Name + Price */}
                         <div className="dish-form-row row-name-price">
                             <div className="input-group-modern col-name">
                                 <label htmlFor="dish-title">Dish Name</label>
@@ -959,6 +1277,7 @@ export const AdminPanel = () => {
                                 <Form.Control
                                   id="dish-price"
                                   type="number"
+                                  inputMode="decimal"
                                   step="0.01"
                                   min="0"
                                   placeholder="0.00"
@@ -991,6 +1310,7 @@ export const AdminPanel = () => {
                                 <Form.Control
                                   id="dish-stock"
                                   type="number"
+                                  inputMode="numeric"
                                   min="0"
                                   placeholder="Available Qty"
                                   name="stock"
@@ -1125,6 +1445,12 @@ export const AdminPanel = () => {
                             </div>
                         )}
 
+                        {formError && (
+                            <p className="dish-form-error" role="alert">
+                                {formError}
+                            </p>
+                        )}
+
                         <div className="form-actions-modern">
                             <Button
                                 type="submit"
@@ -1137,7 +1463,7 @@ export const AdminPanel = () => {
                                       ? "Save Changes"
                                       : "Publish Dish"}
                             </Button>
-                            {editingId && <Button variant="link" onClick={()=>setEditingId(null)} className="btn-cancel">Cancel</Button>}
+                            {editingId && <Button type="button" variant="link" onClick={resetMenuForm} className="btn-cancel">Cancel</Button>}
                         </div>
                     </Form>
                 </div>
@@ -1171,6 +1497,57 @@ export const AdminPanel = () => {
             </div>
         )}
       </main>
+
+      {confirmDialog.open && (
+        <div
+          className="admin-modal-backdrop"
+          role="presentation"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="admin-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="admin-confirm-modal__header">
+              <h4 id="admin-confirm-title">{confirmDialog.title}</h4>
+              <button
+                type="button"
+                className="admin-confirm-modal__close"
+                onClick={closeConfirmDialog}
+                aria-label="Close confirmation dialog"
+              >
+                <FiX />
+              </button>
+            </header>
+            <div className="admin-confirm-modal__body">
+              <p>{confirmDialog.message}</p>
+            </div>
+            <footer className="admin-confirm-modal__footer">
+              <button
+                type="button"
+                className="admin-confirm-btn cancel"
+                onClick={closeConfirmDialog}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`admin-confirm-btn ${confirmDialog.tone}`}
+                onClick={() => {
+                  const action = confirmDialog.onConfirm;
+                  closeConfirmDialog();
+                  if (typeof action === "function") action();
+                }}
+              >
+                {confirmDialog.confirmLabel}
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
