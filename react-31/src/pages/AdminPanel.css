@@ -109,9 +109,9 @@
   width: 100%;
 }
 
-/* Row 1: Dish Name (65%) + Price (35%) */
+/* Row 1: Dish Name + Price (Same 1fr 1fr grid with 20px gap as Category & Stock) */
 .row-name-price {
-  grid-template-columns: 1.85fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
 /* Row 2: Category (50%) + Stock Quantity (50%) */
