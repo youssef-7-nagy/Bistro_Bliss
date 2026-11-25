@@ -66,10 +66,6 @@ export const Navbar = () => {
           <span className="logo-text">Velmora Bliss</span>
         </div>
 
-        <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-        </div>
-
         <ul className={`nav-links ${isMobileMenuOpen ? 'mobile-active' : ''}`} ref={navRef}>
           <li><NavLink to="/">Home</NavLink></li>
 
@@ -94,30 +90,36 @@ export const Navbar = () => {
           )}
         </ul>
 
-        <div className="nav-buttons">
-          <NavLink to="/Cart" className="cart-btn-wrapper">
-            <div className="cart-icon-container">
-              <FaShoppingCart className="cart-icon" />
-              <span className="cart-text">Order</span>
-              <span className="cart-badge">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            </div>
-          </NavLink>
+        <div className="navbar-right">
+          <div className="nav-buttons">
+            <NavLink to="/Cart" className="cart-btn-wrapper">
+              <div className="cart-icon-container">
+                <FaShoppingCart className="cart-icon" />
+                <span className="cart-text">Order</span>
+                <span className="cart-badge">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              </div>
+            </NavLink>
 
-          {isLoggedIn && (
-            <button
-              className="btn-outline"
-              onClick={handleLogout}
-              style={{ padding: "0.5rem 1rem", borderColor: "#e74c3c", color: "#e74c3c", display: "flex", alignItems: "center", gap: "5px" }}
-            >
-              <FaSignOutAlt /> Logout
-            </button>
-          )}
+            {isLoggedIn && (
+              <button
+                className="btn-outline nav-desktop-only"
+                onClick={handleLogout}
+                style={{ padding: "0.5rem 1rem", borderColor: "#e74c3c", color: "#e74c3c", display: "flex", alignItems: "center", gap: "5px" }}
+              >
+                <FaSignOutAlt /> Logout
+              </button>
+            )}
 
-          <NavLink to="/BookTable">
-            <button className="btn-outline">Book A Table</button>
-          </NavLink>
+            <NavLink to="/BookTable" className="nav-desktop-only">
+              <button className="btn-outline">Book A Table</button>
+            </NavLink>
+          </div>
+
+          <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </div>
         </div>
       </nav>
     </>
