@@ -54,7 +54,15 @@ export const AdminPanel = () => {
   const [formData, setFormData] = useState({ title: "", description: "", price: "", stock: "", category: "main course" });
   const [selectedImages, setSelectedImages] = useState([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [dishUploadState, setDishUploadState] = useState({
+    visible: false,
+    progress: 0,
+    phase: "idle",
+    dishTitle: "",
+    message: "",
+  });
   const imagesRef = useRef();
+  const uploadHideTimerRef = useRef(null);
 
   // --- COLORS ---
   const COLORS = ['#4361ee', '#3a0ca3', '#f72585', '#4cc9f0', '#10b981', '#f59e0b'];
@@ -370,9 +378,23 @@ export const AdminPanel = () => {
 
   const handleMenuSubmit = async (e) => {
     e.preventDefault();
+    if (uploadHideTimerRef.current) {
+      clearTimeout(uploadHideTimerRef.current);
+      uploadHideTimerRef.current = null;
+    }
+
+    const savedTitle = formData.title?.trim() || "Dish";
+
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingId) {
+        setDishUploadState({
+          visible: true,
+          progress: 60,
+          phase: "processing",
+          dishTitle: savedTitle,
+          message: "Saving dish changes...",
+        });
         await axios.put(`${API_URL}/products/${editingId}`, formData, config);
         toast.success("Dish updated.");
       } else {
@@ -383,18 +405,56 @@ export const AdminPanel = () => {
         } else {
           return toast.error("At least one image is required.");
         }
+
+        setDishUploadState({
+          visible: true,
+          progress: 0,
+          phase: "uploading",
+          dishTitle: savedTitle,
+          message: "Uploading dish data & images...",
+        });
+
         await axios.post(`${API_URL}/products`, data, {
           headers: { ...config.headers, "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            const total = progressEvent.total || 0;
+            const percent = total > 0 ? Math.min(100, Math.round((progressEvent.loaded * 100) / total)) : 50;
+            setDishUploadState((prev) => ({
+              ...prev,
+              progress: percent,
+              phase: percent >= 100 ? "processing" : "uploading",
+              message: percent >= 100 ? "Saving dish & optimizing image..." : `Uploading dish data... ${percent}%`,
+            }));
+          },
         });
         toast.success("Dish created.");
       }
+
+      setDishUploadState({
+        visible: true,
+        progress: 100,
+        phase: "done",
+        dishTitle: savedTitle,
+        message: editingId ? "Done! Dish updated successfully." : "Done! Dish published & ready.",
+      });
+      uploadHideTimerRef.current = setTimeout(() => {
+        setDishUploadState((prev) => ({ ...prev, visible: false }));
+      }, 4500);
 
       setFormData({ title: "", description: "", price: "", stock: "", category: "main course" });
       setEditingId(null);
       clearMenuUploadFiles();
       fetchData("menu");
     } catch (error) {
-      toast.error("Failed to save dish.");
+      const errorMsg = error.response?.data?.message || "Failed to save dish.";
+      setDishUploadState({
+        visible: true,
+        progress: 0,
+        phase: "error",
+        dishTitle: savedTitle,
+        message: errorMsg,
+      });
+      toast.error(errorMsg);
     }
   };
 
@@ -951,8 +1011,53 @@ export const AdminPanel = () => {
                             <Form.Control as="textarea" rows={4} placeholder="Describe the flavors and ingredients..." name="description" value={formData.description} onChange={(e)=>setFormData({...formData,description:e.target.value})} />
                         </div>
 
+                        {dishUploadState.visible && (
+                            <div className={`dish-upload-panel phase-${dishUploadState.phase}`} role="status" aria-live="polite">
+                                <div className="dish-upload-panel__header">
+                                    <div className="dish-upload-panel__title">
+                                        <span className="dish-upload-panel__icon" aria-hidden="true">
+                                            {dishUploadState.phase === "done" ? <FiCheck /> : dishUploadState.phase === "error" ? <FiX /> : <FiUploadCloud />}
+                                        </span>
+                                        <div>
+                                            <strong>{dishUploadState.dishTitle}</strong>
+                                            <p>{dishUploadState.message}</p>
+                                        </div>
+                                    </div>
+                                    <div className="dish-upload-panel__meta">
+                                        <span className="dish-upload-panel__percent">
+                                            {dishUploadState.phase === "done" ? "100%" : dishUploadState.phase === "error" ? "Failed" : `${dishUploadState.progress}%`}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="dish-upload-panel__close"
+                                            aria-label="Dismiss upload status"
+                                            onClick={() => setDishUploadState((prev) => ({ ...prev, visible: false }))}
+                                        >
+                                            <FiX />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="dish-upload-panel__track">
+                                    <div
+                                        className="dish-upload-panel__bar"
+                                        style={{ width: `${dishUploadState.phase === "error" ? 100 : dishUploadState.progress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="form-actions-modern">
-                            <Button type="submit" className="btn-save">{editingId ? "Save Changes" : "Publish Dish"}</Button>
+                            <Button
+                                type="submit"
+                                className="btn-save"
+                                disabled={dishUploadState.phase === "uploading" || dishUploadState.phase === "processing"}
+                            >
+                                {dishUploadState.phase === "uploading" || dishUploadState.phase === "processing"
+                                    ? "Uploading..."
+                                    : editingId
+                                      ? "Save Changes"
+                                      : "Publish Dish"}
+                            </Button>
                             {editingId && <Button variant="link" onClick={()=>setEditingId(null)} className="btn-cancel">Cancel</Button>}
                         </div>
                     </Form>
