@@ -1424,16 +1424,6 @@ export const AdminPanel = () => {
                             <div className="input-group-modern col-upload file-group">
                                 <div className="col-upload-header">
                                     <label>Upload Image</label>
-                                    {(existingImages.length > 0 || selectedImages.length > 0) && (
-                                      <div className="col-upload-actions">
-                                        <button type="button" className="replace-upload-text-btn" onClick={handleTriggerReplaceImage}>
-                                          Replace Image
-                                        </button>
-                                        <button type="button" className="clear-upload-text-btn" onClick={handleRemoveAllImages}>
-                                          Remove Image
-                                        </button>
-                                      </div>
-                                    )}
                                 </div>
                                 <div
                                   className={`custom-file-upload ${isDragActive ? "drag-active" : ""} ${(existingImages.length > 0 || selectedImages.length > 0) ? "has-files" : ""}`}
@@ -1484,7 +1474,6 @@ export const AdminPanel = () => {
                                         <div className="upload-preview-grid">
                                           {existingImages.map((imgPath, idx) => (
                                             <figure key={`existing-${imgPath}-${idx}`} className="upload-preview-card">
-                                              <span className="upload-preview-badge current">Current</span>
                                               <button
                                                 type="button"
                                                 className="upload-preview-remove"
@@ -1508,7 +1497,6 @@ export const AdminPanel = () => {
                                           ))}
                                           {imagePreviews.map((preview, idx) => (
                                             <figure key={preview.id} className="upload-preview-card is-new">
-                                              <span className="upload-preview-badge new">New</span>
                                               <button
                                                 type="button"
                                                 className="upload-preview-remove"
