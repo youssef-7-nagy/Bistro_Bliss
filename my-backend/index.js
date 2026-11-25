@@ -16,6 +16,7 @@ const authRouter = require("./routes/auth.routes");
 const authProducts = require("./routes/products.routes");
 const orderRouter = require("./routes/order.routes");
 const reservationRouter = require("./routes/reservation.routes");
+const { Upload } = require("./models/Upload");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -71,6 +72,21 @@ app.use(async (req, res, next) => {
     res.status(503).json({
       message: "Database connection failed. Please ensure MongoDB Atlas IP whitelist has 0.0.0.0/0.",
     });
+  }
+});
+
+app.get("/uploads/:filename", async (req, res) => {
+  try {
+    const fileDoc = await Upload.findOne({ filename: req.params.filename });
+    if (!fileDoc) {
+      return res.status(404).json({ message: "Image not found" });
+    }
+    res.setHeader("Content-Type", fileDoc.contentType);
+    res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+    return res.send(fileDoc.data);
+  } catch (err) {
+    console.error("Error serving uploaded image:", err.message);
+    return res.status(500).json({ message: "Failed to load image" });
   }
 });
 

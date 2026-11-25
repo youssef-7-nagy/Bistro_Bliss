@@ -1,34 +1,38 @@
 const { Product } = require("../models/Product");
-const { createProductSchema } = require("../validators/product.validator")
+const { Upload } = require("../models/Upload");
+const { createProductSchema } = require("../validators/product.validator");
 const sharp = require("sharp");
-const fs = require("fs/promises");
 const path = require("path");
 
-async function optimizeUploadImage(filePath) {
-  const absoluteInput = path.resolve(filePath);
-  const parsedPath = path.parse(absoluteInput);
-  // Avoid writing to the exact same path when the original upload is already webp.
-  const optimizedFileName =
-    parsedPath.ext.toLowerCase() === ".webp"
-      ? `${parsedPath.name}-optimized.webp`
-      : `${parsedPath.name}.webp`;
-  const optimizedAbsolutePath = path.join(parsedPath.dir, optimizedFileName);
+async function saveUploadedImage(file) {
+  const parsed = path.parse(file.originalname || "dish.png");
+  const safeBaseName = (parsed.name || "dish").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const uniquePrefix = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
 
-  await sharp(absoluteInput)
-    .rotate()
-    .resize({
-      width: 1600,
-      height: 1600,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .webp({ quality: 82, effort: 4 })
-    .toFile(optimizedAbsolutePath);
+  let buffer = file.buffer;
+  let contentType = file.mimetype || "application/octet-stream";
+  let ext = parsed.ext || ".png";
 
-  await fs.unlink(absoluteInput).catch(() => {});
+  try {
+    buffer = await sharp(file.buffer)
+      .rotate()
+      .resize({
+        width: 1600,
+        height: 1600,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82, effort: 4 })
+      .toBuffer();
+    contentType = "image/webp";
+    ext = ".webp";
+  } catch (error) {
+    console.log("Image optimization failed, storing original buffer:", error.message);
+  }
 
-  const relativeOutputPath = path.join(path.dirname(filePath), optimizedFileName);
-  return relativeOutputPath.replace(/\\/g, "/");
+  const filename = `${uniquePrefix}-${safeBaseName}${ext}`;
+  await Upload.create({ filename, contentType, data: buffer });
+  return `uploads/${filename}`;
 }
 
 // 1. Create Product
@@ -42,16 +46,7 @@ async function createProduct(request, response) {
     const owner = request.user.id;
 
     const images = request.files
-      ? await Promise.all(
-          request.files.map(async (file) => {
-            try {
-              return await optimizeUploadImage(file.path);
-            } catch (error) {
-              console.log("Image optimization failed, using original file:", error.message);
-              return String(file.path).replace(/\\/g, "/");
-            }
-          })
-        )
+      ? await Promise.all(request.files.map((file) => saveUploadedImage(file)))
       : [];
     
     const lastProduct = await Product.findOne().sort({ order: -1 });

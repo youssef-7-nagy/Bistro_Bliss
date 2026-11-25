@@ -1,10 +1,7 @@
 const multer = require("multer");
 
-const storage = multer.diskStorage({
-  destination: (request, file, cb) => cb(null, "uploads/"),
-  filename: (request, file, cb) =>
-    cb(null,`${Date.now()}-${file.originalname}`),   
-});
+// Use memory storage so uploads work on read-only serverless filesystems (e.g. Vercel) as well as locally
+const storage = multer.memoryStorage();
 
 const fileFilter = (request, file, cb) => {
   if (!file.mimetype || !file.mimetype.startsWith("image/")) {
@@ -17,7 +14,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 6 * 1024 * 1024,
+    fileSize: 4 * 1024 * 1024,
   },
 });
 
