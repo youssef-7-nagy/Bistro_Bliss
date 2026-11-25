@@ -15,7 +15,13 @@ const ProductCard = ({ product, index }) => {
   const animationType = isLeftColumn ? 'fadeInLeft' : 'fadeInRight';
 
 
+  const isAvailable = product.isAvailable !== false;
+
   const handleAddToCart = useCallback(() => {
+    if (!isAvailable) {
+      toast.info(`${product.title} is currently unavailable.`, { position: "bottom-right" });
+      return;
+    }
     if (!islogged) {
       toast.error("You must be logged in to order.", { position: "bottom-right" });
       navigate("/Login");
@@ -27,14 +33,14 @@ const ProductCard = ({ product, index }) => {
     toast.success(`${product.title} added to cart!`, {
       position: "bottom-right"
     });
-  }, [dispatch, islogged, navigate, product]);
+  }, [dispatch, isAvailable, islogged, navigate, product]);
 
   return (
     <Card
-      className="menu-item"
+      className={`menu-item ${!isAvailable ? "menu-item-unavailable" : ""}`}
       style={{
         animationName: animationType,
-        animationDelay: `${index * 0.4}s`
+        animationDelay: `${Math.min(index, 6) * 0.12}s`
       }}
     >
       <div className="menu-item-content">
@@ -50,7 +56,10 @@ const ProductCard = ({ product, index }) => {
         />
 
         <div className="menu-item-text">
-          <h5 className="menu-item-title">{product.title}</h5>
+          <h5 className="menu-item-title">
+            <span>{product.title}</span>
+            {!isAvailable && <span className="menu-unavailable-tag">Unavailable</span>}
+          </h5>
           <div className="menu-item-price">{product.price} EGP</div>
           <p className="menu-item-desc">{product.description}</p>
 
@@ -59,8 +68,9 @@ const ProductCard = ({ product, index }) => {
             <Button
               className="btn-custom btn-order"
               onClick={handleAddToCart}
+              disabled={!isAvailable}
             >
-              Order Now
+              {isAvailable ? "Order Now" : "Unavailable"}
             </Button>
 
             <Button

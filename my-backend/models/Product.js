@@ -1,4 +1,3 @@
-const { ref } = require("joi");
 const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
@@ -7,19 +6,20 @@ const productSchema = new mongoose.Schema(
     description: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     stock: { type: Number, required: true, default: 0 },
-    category: { 
-    type: String, 
-    required: true, 
-    enum: ['breakfast', 'main course', 'desserts', 'drinks'] 
-},
-
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isAvailable: { type: Boolean, default: true },
     images: { type: [String], default: [] },
     order: { type: Number, default: 0 },
-    owner:{
-        type: mongoose.Schema.Types.ObjectId, 
-        ref:"User",
-        require: true,
-    }
+    displayOrder: { type: Number },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      require: true,
+    },
   },
   { timestamps: true }
 );

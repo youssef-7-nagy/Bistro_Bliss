@@ -49,10 +49,22 @@ async function createProduct(request, response) {
       ? await Promise.all(request.files.map((file) => saveUploadedImage(file)))
       : [];
     
-    const lastProduct = await Product.findOne().sort({ order: -1 });
-    const nextOrder = lastProduct && lastProduct.order !== undefined ? lastProduct.order + 1 : 0;
+    const lastProduct = await Product.findOne({ category: request.body.category }).sort({
+      displayOrder: -1,
+      order: -1,
+    });
+    const currentMax = lastProduct
+      ? Math.max(Number(lastProduct.displayOrder ?? -1), Number(lastProduct.order ?? -1))
+      : -1;
+    const nextOrder = currentMax + 1;
 
-    const product = await Product.create({ owner, images, order: nextOrder, ...request.body });
+    const product = await Product.create({
+      owner,
+      images,
+      order: nextOrder,
+      displayOrder: nextOrder,
+      ...request.body,
+    });
     
     response.status(201).json({
       message: "Product created successfully!",
@@ -83,8 +95,19 @@ async function getProduct(request, response) {
 
 async function getAllProducts(request, response) {
   try {
-    const products = await Product.find().sort({ order: 1, createdAt: -1 });
-    response.json({ message: "All Products", data: products }); 
+    const products = await Product.find().lean();
+    products.sort((a, b) => {
+      const orderA = Number(a.displayOrder ?? a.order ?? 0);
+      const orderB = Number(b.displayOrder ?? b.order ?? 0);
+      if (orderA !== orderB) return orderA - orderB;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+    const normalized = products.map((product) => ({
+      ...product,
+      displayOrder: product.displayOrder ?? product.order ?? 0,
+      isAvailable: product.isAvailable !== false,
+    }));
+    response.json({ message: "All Products", data: normalized });
   } catch (error) {
     console.log(error);
     response.status(500).json({ message: "Internal server error" });
@@ -95,17 +118,54 @@ async function getAllProducts(request, response) {
 async function updateProduct(request, response) {
   try {
     const { id } = request.params;
-    // Update fields }
-    const product = await Product.findByIdAndUpdate(id, request.body, { new: true });
-    
-    if (!product) {
-        return response.status(404).json({ message: "Product not found" });
+    const existing = await Product.findById(id);
+
+    if (!existing) {
+      return response.status(404).json({ message: "Product not found" });
+    }
+
+    const updatePayload = { ...request.body };
+    const nextCategory = updatePayload.category ? String(updatePayload.category).trim() : existing.category;
+    const categoryChanged = nextCategory !== existing.category;
+
+    if (categoryChanged) {
+      const lastInTarget = await Product.findOne({ category: nextCategory }).sort({
+        displayOrder: -1,
+        order: -1,
+      });
+      const targetMax = lastInTarget
+        ? Math.max(Number(lastInTarget.displayOrder ?? -1), Number(lastInTarget.order ?? -1))
+        : -1;
+      const nextOrder = targetMax + 1;
+      updatePayload.category = nextCategory;
+      updatePayload.order = nextOrder;
+      updatePayload.displayOrder = nextOrder;
+    }
+
+    const product = await Product.findByIdAndUpdate(id, updatePayload, { new: true });
+
+    if (categoryChanged) {
+      const remainingOld = await Product.find({ category: existing.category }).sort({
+        displayOrder: 1,
+        order: 1,
+        createdAt: -1,
+      });
+      if (remainingOld.length > 0) {
+        await Product.bulkWrite(
+          remainingOld.map((item, idx) => ({
+            updateOne: {
+              filter: { _id: item._id },
+              update: { $set: { order: idx, displayOrder: idx } },
+            },
+          }))
+        );
+      }
     }
 
     response.json({ message: "Product updated successfully", data: product });
   } catch (error) {
     console.log(error);
-    response.status(500).json({ message: "Internal server error" }); 
+    response.status(500).json({ message: "Internal server error" });
   }
 }
 
@@ -126,22 +186,29 @@ async function deleteProduct(request, response) {
   }
 }
 
-// Reorder Products
+// Reorder Products (independent per category)
 async function reorderProducts(request, response) {
   try {
-    const { items } = request.body; // Expecting [{id, order}]
-    
-    if (!Array.isArray(items)) {
-      return response.status(400).json({ message: "Items must be an array" });
+    const { items, category } = request.body; // Expecting { category?, items: [{ id, displayOrder, order }] }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return response.status(400).json({ message: "Items must be a non-empty array" });
     }
 
-    const updates = items.map(item => 
-      Product.findByIdAndUpdate(item.id, { order: item.order })
-    );
+    const operations = items.map((item, index) => {
+      const nextOrder = Number(item.displayOrder ?? item.order ?? index);
+      const filter = category ? { _id: item.id, category } : { _id: item.id };
+      return {
+        updateOne: {
+          filter,
+          update: { $set: { displayOrder: nextOrder, order: nextOrder } },
+        },
+      };
+    });
 
-    await Promise.all(updates);
+    await Product.bulkWrite(operations);
 
-    response.json({ message: "Products reordered successfully" });
+    response.json({ message: "Category menu order updated successfully" });
   } catch (error) {
     console.log(error);
     response.status(500).json({ message: "Internal server error" });

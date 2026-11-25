@@ -81,24 +81,46 @@ const Products = () => {
     return () => window.clearTimeout(scrollTimer);
   }, [location.search, products.length]);
 
-  const categorizedProducts = useMemo(() => {
-    const grouped = {
-      breakfast: [],
-      mainCourse: [],
-      desserts: [],
-      drinks: [],
-    };
+  const categorySections = useMemo(() => {
+    const groups = new Map();
 
     products.forEach((product) => {
-      const category = product?.category?.toLowerCase().trim();
-
-      if (category === "breakfast") grouped.breakfast.push(product);
-      if (category === "main course" || category === "main-course") grouped.mainCourse.push(product);
-      if (category === "desserts") grouped.desserts.push(product);
-      if (category === "drinks") grouped.drinks.push(product);
+      const rawCategory = String(product?.category || "Other").trim();
+      const key = rawCategory.toLowerCase();
+      if (!groups.has(key)) {
+        groups.set(key, { key, rawName: rawCategory, items: [] });
+      }
+      groups.get(key).items.push(product);
     });
 
-    return grouped;
+    const PREFERRED_ORDER = ["breakfast", "lunch", "main course", "main-course", "desserts", "drinks"];
+    const sections = Array.from(groups.values());
+
+    sections.sort((a, b) => {
+      const idxA = PREFERRED_ORDER.indexOf(a.key);
+      const idxB = PREFERRED_ORDER.indexOf(b.key);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.key.localeCompare(b.key);
+    });
+
+    sections.forEach((section) => {
+      section.items.sort((a, b) => {
+        const orderA = Number(a.displayOrder ?? a.order ?? 0);
+        const orderB = Number(b.displayOrder ?? b.order ?? 0);
+        if (orderA !== orderB) return orderA - orderB;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    });
+
+    return sections.map((section) => ({
+      id: section.key.replace(/\s+/g, "-"),
+      title: section.rawName
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (ch) => ch.toUpperCase()),
+      items: section.items,
+    }));
   }, [products]);
 
   return (
@@ -139,10 +161,14 @@ const Products = () => {
           </div>
         ) : (
           <>
-            <CategorySection id="breakfast" title="Breakfast" items={categorizedProducts.breakfast} />
-            <CategorySection id="main-course" title="Main Course" items={categorizedProducts.mainCourse} />
-            <CategorySection id="desserts" title="Desserts" items={categorizedProducts.desserts} />
-            <CategorySection id="drinks" title="Drinks" items={categorizedProducts.drinks} />
+            {categorySections.map((section) => (
+              <CategorySection
+                key={section.id}
+                id={section.id}
+                title={section.title}
+                items={section.items}
+              />
+            ))}
           </>
         )}
       </div>

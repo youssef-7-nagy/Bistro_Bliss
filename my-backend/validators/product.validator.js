@@ -11,8 +11,8 @@ const createProductSchema = Joi.object({
   description: Joi.string().required(),
   price: Joi.number().min(0).required(),
   stock: Joi.number().min(0).default(0),
-  category: Joi.string().required() 
-  
+  category: Joi.string().required(),
+  isAvailable: Joi.boolean().optional(),
 });
 
 module.exports = { createProductSchema };

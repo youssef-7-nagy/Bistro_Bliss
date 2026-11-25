@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { Form, Button, Row, Col } from "react-bootstrap";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { FiCheck, FiChevronLeft, FiChevronRight, FiEdit2, FiImage, FiPlus, FiTrash2, FiUploadCloud, FiX } from "react-icons/fi";
+import { MenuCategoryOrganizer } from '../component/MenuCategoryOrganizer';
 import './AdminPanel.css'; 
 
 const ORDER_STATUS_WEIGHT = { pending: 0, delivered: 1, completed: 2, cancelled: 3 };
@@ -54,6 +55,8 @@ export const AdminPanel = () => {
   const [formData, setFormData] = useState({ title: "", description: "", price: "", stock: "", category: "main course" });
   const [selectedImages, setSelectedImages] = useState([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [savingCategory, setSavingCategory] = useState("");
+  const [busyToggleId, setBusyToggleId] = useState("");
   const [dishUploadState, setDishUploadState] = useState({
     visible: false,
     progress: 0,
@@ -484,31 +487,61 @@ export const AdminPanel = () => {
     }
   };
 
-  const handleMoveProduct = async (index, direction) => {
-    if (direction === -1 && index === 0) return;
-    if (direction === 1 && index === products.length - 1) return;
-
-    const reordered = [...products];
-    const temp = reordered[index];
-    reordered[index] = reordered[index + direction];
-    reordered[index + direction] = temp;
-    reordered.forEach((product, orderIndex) => {
-      product.order = orderIndex;
+  const handleReorderCategory = async (categoryName, reorderedCategoryItems) => {
+    const previousProducts = products;
+    const orderById = new Map();
+    reorderedCategoryItems.forEach((item, idx) => {
+      orderById.set(item._id, idx);
     });
 
-    setProducts(reordered);
+    setProducts((prev) =>
+      prev.map((item) => {
+        if (!orderById.has(item._id)) return item;
+        const nextOrder = orderById.get(item._id);
+        return { ...item, displayOrder: nextOrder, order: nextOrder };
+      })
+    );
 
     try {
-      const payload = reordered.map((product) => ({ id: product._id, order: product.order }));
+      setSavingCategory(categoryName);
+      const payload = reorderedCategoryItems.map((product, idx) => ({
+        id: product._id,
+        displayOrder: idx,
+        order: idx,
+      }));
       await axios.put(
         `${API_URL}/products/reorder`,
-        { items: payload },
+        { category: categoryName, items: payload },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Menu order updated.");
+      toast.success(`${categoryName} order saved.`);
     } catch (error) {
-      toast.error("Failed to reorder menu.");
-      fetchData("menu");
+      setProducts(previousProducts);
+      toast.error("Failed to save category order.");
+    } finally {
+      setSavingCategory("");
+    }
+  };
+
+  const handleToggleDishAvailability = async (product) => {
+    const nextAvailable = product.isAvailable === false;
+    try {
+      setBusyToggleId(product._id);
+      await axios.put(
+        `${API_URL}/products/${product._id}`,
+        { isAvailable: nextAvailable },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setProducts((prev) =>
+        prev.map((item) =>
+          item._id === product._id ? { ...item, isAvailable: nextAvailable } : item
+        )
+      );
+      toast.success(nextAvailable ? "Dish marked as available." : "Dish marked as unavailable.");
+    } catch (error) {
+      toast.error("Failed to update availability.");
+    } finally {
+      setBusyToggleId("");
     }
   };
 
@@ -1079,52 +1112,15 @@ export const AdminPanel = () => {
                     <p>Add your first dish from the form above.</p>
                   </div>
                 ) : (
-                  <div className="menu-grid">
-                      {products.map((p, index) => (
-                          <div key={p._id} className="menu-card-mini">
-                              <div className="card-img-holder">
-                                  <img src={p.images?.[0]?`${API_URL}/${p.images[0]}`:"https://via.placeholder.com/150"} alt={p.title} loading="lazy" decoding="async" />
-                              </div>
-                              <div className="menu-info"><h4>{p.title}</h4><span>{p.price} EGP</span></div>
-                              <div className="menu-actions" style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                  <button
-                                    className="btn-action move"
-                                    onClick={() => handleMoveProduct(index, -1)}
-                                    disabled={index === 0}
-                                    title="Move Left"
-                                    aria-label="Move dish left"
-                                  >
-                                    <FiChevronLeft />
-                                  </button>
-                                  <button
-                                    className="btn-action move"
-                                    onClick={() => handleMoveProduct(index, 1)}
-                                    disabled={index === products.length - 1}
-                                    title="Move Right"
-                                    aria-label="Move dish right"
-                                  >
-                                    <FiChevronRight />
-                                  </button>
-                                  <button
-                                    className="btn-action edit"
-                                    onClick={() => handleEditClick(p)}
-                                    title="Edit"
-                                    aria-label="Edit dish"
-                                  >
-                                    <FiEdit2 />
-                                  </button>
-                                  <button
-                                    className="btn-action delete"
-                                    onClick={() => handleDelete(p._id)}
-                                    title="Delete"
-                                    aria-label="Delete dish"
-                                  >
-                                    <FiTrash2 />
-                                  </button>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
+                  <MenuCategoryOrganizer
+                    products={products}
+                    savingCategory={savingCategory}
+                    busyToggleId={busyToggleId}
+                    onReorderCategory={handleReorderCategory}
+                    onEdit={handleEditClick}
+                    onDelete={handleDelete}
+                    onToggleAvailability={handleToggleDishAvailability}
+                  />
                 )}
             </div>
         )}

@@ -207,6 +207,32 @@
   box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
 }
 
+.menu-item-unavailable .menu-item-img {
+  opacity: 0.6;
+  filter: grayscale(45%);
+}
+
+.menu-unavailable-tag {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  align-self: center;
+  margin-left: 8px;
+}
+
+.btn-order:disabled {
+  background-color: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
 .btn-more {
   background-color: transparent !important;
   border: 1px solid #999 !important;

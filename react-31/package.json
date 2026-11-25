@@ -13,6 +13,9 @@
     "deploy": "gh-pages -d dist --repo https://github.com/youssef-7-nagy/Bistro_Bliss.git -b gh-pages"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@reduxjs/toolkit": "^2.8.2",
