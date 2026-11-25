@@ -216,6 +216,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.col-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.replace-upload-text-btn {
+  background: none;
+  border: none;
+  color: #4361ee;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 0 6px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.replace-upload-text-btn:hover {
+  color: #3730a3;
 }
 
 .clear-upload-text-btn {
@@ -270,8 +293,9 @@
 
 .dish-builder-form .custom-file-upload:hover { border-color: #4361ee; background: #eff6ff; }
 .dish-builder-form .custom-file-upload.drag-active { border-color: #4361ee; background: #e0e7ff; box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.12); }
-.dish-builder-form .custom-file-upload.has-files { border-style: solid; border-color: #bfdbfe; background: #f8fbff; }
+.dish-builder-form .custom-file-upload.has-files { border-style: solid; border-color: #bfdbfe; background: #f8fbff; cursor: default; padding: 12px; align-items: stretch; justify-content: flex-start; }
 .file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
+.file-input.is-hidden-overlay { display: none; }
 
 .upload-content {
   display: flex;
@@ -324,28 +348,135 @@
 }
 .clear-upload-btn:hover { background: #1e293b; }
 
+.upload-preview-stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .dish-builder-form .upload-preview-grid {
-  margin-top: 10px;
+  margin-top: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  width: 100%;
 }
 
 .dish-builder-form .upload-preview-card {
+  position: relative;
   margin: 0;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 6px;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+}
+
+.dish-builder-form .upload-preview-card.is-new {
+  border-color: #86efac;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+}
+
+.upload-preview-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.upload-preview-badge.current {
+  background: rgba(238, 242, 255, 0.95);
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.upload-preview-badge.new {
+  background: rgba(209, 250, 229, 0.96);
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.upload-preview-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.upload-preview-remove:hover {
+  background: #fef2f2;
+  transform: scale(1.06);
 }
 
 .dish-builder-form .upload-preview-card img {
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 6px;
+  object-fit: contain;
+  background: #f8fafc;
+  border-radius: 8px;
   display: block;
+}
+
+.upload-stage-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-upload-stage-action {
+  flex: 1;
+  min-width: 130px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-upload-stage-action.replace {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+}
+
+.btn-upload-stage-action.replace:hover {
+  background: #e0e7ff;
+}
+
+.btn-upload-stage-action.remove {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.btn-upload-stage-action.remove:hover {
+  background: #fee2e2;
 }
 
 .dish-builder-form .upload-preview-card figcaption {

@@ -11,6 +11,8 @@ import './AdminPanel.css';
 
 const ORDER_STATUS_WEIGHT = { pending: 0, delivered: 1, completed: 2, cancelled: 3 };
 const MAX_UPLOAD_IMAGES = 5;
+const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
 const normalize = (value) => String(value || "").toLowerCase();
 const hasCustomizationNotes = (order) =>
   (order.items || []).some((item) => String(item.specialInstructions || "").trim().length > 0);
@@ -64,6 +66,7 @@ export const AdminPanel = () => {
   // --- MENU FORM ---
   const [editingId, setEditingId] = useState(null); 
   const [formData, setFormData] = useState({ title: "", description: "", price: "", stock: "", category: "main course" });
+  const [existingImages, setExistingImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const [savingCategory, setSavingCategory] = useState("");
@@ -78,6 +81,7 @@ export const AdminPanel = () => {
   const imagesRef = useRef();
   const uploadHideTimerRef = useRef(null);
   const formCardRef = useRef(null);
+  const replaceModeRef = useRef(false);
 
   // --- COLORS ---
   const COLORS = ['#4361ee', '#3a0ca3', '#f72585', '#4cc9f0', '#10b981', '#f59e0b'];
@@ -108,31 +112,98 @@ export const AdminPanel = () => {
   const clearMenuUploadFiles = useCallback(() => {
     setSelectedImages([]);
     setIsDragActive(false);
+    replaceModeRef.current = false;
     if (imagesRef.current) {
       imagesRef.current.value = "";
     }
   }, []);
 
-  const setMenuUploadFiles = useCallback((incomingFiles) => {
+  const setMenuUploadFiles = useCallback((incomingFiles, options = {}) => {
     const rawFiles = Array.from(incomingFiles || []);
     if (!rawFiles.length) {
-      clearMenuUploadFiles();
+      replaceModeRef.current = false;
       return;
     }
 
-    const imageFiles = rawFiles.filter((file) => String(file.type || "").startsWith("image/"));
-    if (rawFiles.length !== imageFiles.length) {
-      toast.warning("Only image files are allowed.");
+    const validFiles = [];
+    let hasInvalidType = false;
+    let hasOversized = false;
+
+    rawFiles.forEach((file) => {
+      const mime = String(file.type || "").toLowerCase();
+      if (!ALLOWED_IMAGE_TYPES.has(mime)) {
+        hasInvalidType = true;
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        hasOversized = true;
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (hasInvalidType) {
+      const msg = "Only PNG, JPG, and WEBP image files are allowed.";
+      setFormError(msg);
+      toast.warning(msg);
+    }
+    if (hasOversized) {
+      const msg = "Each image must be 4 MB or smaller.";
+      setFormError(msg);
+      toast.warning(msg);
     }
 
-    const limitedFiles = imageFiles.slice(0, MAX_UPLOAD_IMAGES);
-    if (imageFiles.length > MAX_UPLOAD_IMAGES) {
-      toast.info(`Only the first ${MAX_UPLOAD_IMAGES} images were selected.`);
+    if (!validFiles.length) {
+      replaceModeRef.current = false;
+      if (imagesRef.current) imagesRef.current.value = "";
+      return;
+    }
+
+    setFormError("");
+    const shouldReplace = Boolean(options.replaceExisting || replaceModeRef.current || (editingId && existingImages.length > 0));
+    replaceModeRef.current = false;
+
+    if (shouldReplace) {
+      setExistingImages([]);
+    }
+
+    const availableSlots = shouldReplace
+      ? MAX_UPLOAD_IMAGES
+      : Math.max(0, MAX_UPLOAD_IMAGES - existingImages.length);
+    const limitedFiles = validFiles.slice(0, availableSlots);
+
+    if (validFiles.length > availableSlots) {
+      toast.info(`Maximum ${MAX_UPLOAD_IMAGES} images allowed per dish.`);
     }
 
     setSelectedImages(limitedFiles);
     syncFileInputWithSelection(limitedFiles);
-  }, [clearMenuUploadFiles, syncFileInputWithSelection]);
+  }, [editingId, existingImages.length, syncFileInputWithSelection]);
+
+  const handleRemoveExistingImage = useCallback((imgPath) => {
+    setExistingImages((prev) => prev.filter((item) => item !== imgPath));
+  }, []);
+
+  const handleRemoveSelectedImage = useCallback((indexToRemove) => {
+    setSelectedImages((prev) => {
+      const next = prev.filter((_, idx) => idx !== indexToRemove);
+      syncFileInputWithSelection(next);
+      return next;
+    });
+  }, [syncFileInputWithSelection]);
+
+  const handleRemoveAllImages = useCallback(() => {
+    setExistingImages([]);
+    clearMenuUploadFiles();
+  }, [clearMenuUploadFiles]);
+
+  const handleTriggerReplaceImage = useCallback(() => {
+    replaceModeRef.current = true;
+    if (imagesRef.current) {
+      imagesRef.current.value = "";
+      imagesRef.current.click();
+    }
+  }, []);
 
   const imagePreviews = useMemo(() => {
     return selectedImages.map((file, index) => ({
@@ -479,6 +550,7 @@ export const AdminPanel = () => {
   const resetMenuForm = useCallback(() => {
     setFormData({ title: "", description: "", price: "", stock: "", category: "main course" });
     setEditingId(null);
+    setExistingImages([]);
     setFormError("");
     clearMenuUploadFiles();
   }, [clearMenuUploadFiles]);
@@ -494,20 +566,46 @@ export const AdminPanel = () => {
     const savedTitle = formData.title?.trim() || "Dish";
 
     try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const authHeaders = { Authorization: `Bearer ${token}` };
       if (editingId) {
+        const data = new FormData();
+        Object.keys(formData).forEach((key) => data.append(key, formData[key] ?? ""));
+        data.append("retainedImages", JSON.stringify(existingImages));
+        selectedImages.forEach((file) => data.append("images", file));
+
         setDishUploadState({
           visible: true,
-          progress: 60,
-          phase: "processing",
+          progress: selectedImages.length > 0 ? 0 : 60,
+          phase: selectedImages.length > 0 ? "uploading" : "processing",
           dishTitle: savedTitle,
-          message: "Saving dish changes...",
+          message: selectedImages.length > 0 ? "Uploading replacement image..." : "Saving dish changes...",
         });
-        await axios.put(`${API_URL}/products/${editingId}`, formData, config);
+
+        const res = await axios.put(`${API_URL}/products/${editingId}`, data, {
+          headers: authHeaders,
+          onUploadProgress: (progressEvent) => {
+            if (selectedImages.length === 0) return;
+            const total = progressEvent.total || 0;
+            const percent = total > 0 ? Math.min(100, Math.round((progressEvent.loaded * 100) / total)) : 50;
+            setDishUploadState((prev) => ({
+              ...prev,
+              progress: percent,
+              phase: percent >= 100 ? "processing" : "uploading",
+              message: percent >= 100 ? "Updating dish & optimizing image..." : `Uploading image... ${percent}%`,
+            }));
+          },
+        });
+
+        const updatedProduct = res.data?.data;
+        if (updatedProduct?._id) {
+          setProducts((prev) =>
+            prev.map((item) => (item._id === updatedProduct._id ? { ...item, ...updatedProduct } : item))
+          );
+        }
         toast.success("Dish updated.");
       } else {
         const data = new FormData();
-        Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+        Object.keys(formData).forEach((key) => data.append(key, formData[key] ?? ""));
         if (selectedImages.length > 0) {
           selectedImages.forEach((file) => data.append("images", file));
         } else {
@@ -526,7 +624,7 @@ export const AdminPanel = () => {
         });
 
         await axios.post(`${API_URL}/products`, data, {
-          headers: { ...config.headers, "Content-Type": "multipart/form-data" },
+          headers: authHeaders,
           onUploadProgress: (progressEvent) => {
             const total = progressEvent.total || 0;
             const percent = total > 0 ? Math.min(100, Math.round((progressEvent.loaded * 100) / total)) : 50;
@@ -572,12 +670,13 @@ export const AdminPanel = () => {
     clearMenuUploadFiles();
     setFormError("");
     setEditingId(product._id);
+    setExistingImages(Array.isArray(product.images) ? product.images.filter(Boolean) : []);
     setFormData({
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
-      category: product.category,
+      title: product.title || "",
+      description: product.description || "",
+      price: product.price ?? "",
+      stock: product.stock ?? "",
+      category: product.category || "main course",
     });
     if (formCardRef.current) {
       formCardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1325,14 +1424,19 @@ export const AdminPanel = () => {
                             <div className="input-group-modern col-upload file-group">
                                 <div className="col-upload-header">
                                     <label>Upload Image</label>
-                                    {selectedImages.length > 0 && (
-                                      <button type="button" className="clear-upload-text-btn" onClick={clearMenuUploadFiles}>
-                                        Remove Image
-                                      </button>
+                                    {(existingImages.length > 0 || selectedImages.length > 0) && (
+                                      <div className="col-upload-actions">
+                                        <button type="button" className="replace-upload-text-btn" onClick={handleTriggerReplaceImage}>
+                                          Replace Image
+                                        </button>
+                                        <button type="button" className="clear-upload-text-btn" onClick={handleRemoveAllImages}>
+                                          Remove Image
+                                        </button>
+                                      </div>
                                     )}
                                 </div>
                                 <div
-                                  className={`custom-file-upload ${isDragActive ? "drag-active" : ""} ${selectedImages.length ? "has-files" : ""}`}
+                                  className={`custom-file-upload ${isDragActive ? "drag-active" : ""} ${(existingImages.length > 0 || selectedImages.length > 0) ? "has-files" : ""}`}
                                   onDragEnter={(event) => {
                                     event.preventDefault();
                                     setIsDragActive(true);
@@ -1349,51 +1453,100 @@ export const AdminPanel = () => {
                                   onDrop={(event) => {
                                     event.preventDefault();
                                     setIsDragActive(false);
-                                    setMenuUploadFiles(event.dataTransfer.files);
+                                    setMenuUploadFiles(event.dataTransfer.files, { replaceExisting: Boolean(editingId) });
                                   }}
                                 >
                                     <Form.Control
                                       type="file"
                                       multiple
-                                      accept="image/*"
+                                      accept="image/png,image/jpeg,image/webp"
                                       ref={imagesRef}
-                                      className="file-input"
+                                      className={`file-input ${(existingImages.length > 0 || imagePreviews.length > 0) ? "is-hidden-overlay" : ""}`}
                                       onChange={(event) => setMenuUploadFiles(event.target.files)}
                                     />
-                                    <div className="upload-content">
-                                        <span className="upload-icon" aria-hidden="true">
-                                          {isDragActive ? <FiUploadCloud /> : <FiImage />}
-                                        </span>
-                                        <div className="upload-text-wrap">
-                                            <strong>
-                                              {isDragActive
-                                                ? "Drop images here"
-                                                : selectedImages.length
-                                                  ? `${selectedImages.length} image${selectedImages.length > 1 ? "s" : ""} selected`
+
+                                    {(existingImages.length === 0 && imagePreviews.length === 0) ? (
+                                      <div className="upload-content">
+                                          <span className="upload-icon" aria-hidden="true">
+                                            {isDragActive ? <FiUploadCloud /> : <FiImage />}
+                                          </span>
+                                          <div className="upload-text-wrap">
+                                              <strong>
+                                                {isDragActive
+                                                  ? "Drop images here"
                                                   : "Drag & Drop or Click to Upload"}
-                                            </strong>
-                                            <small>Supports PNG, JPG, WEBP (Max 5)</small>
+                                              </strong>
+                                              <small>Supports PNG, JPG, WEBP (Max 5, up to 4 MB each)</small>
+                                          </div>
+                                      </div>
+                                    ) : (
+                                      <div className="upload-preview-stage">
+                                        <div className="upload-preview-grid">
+                                          {existingImages.map((imgPath, idx) => (
+                                            <figure key={`existing-${imgPath}-${idx}`} className="upload-preview-card">
+                                              <span className="upload-preview-badge current">Current</span>
+                                              <button
+                                                type="button"
+                                                className="upload-preview-remove"
+                                                onClick={() => handleRemoveExistingImage(imgPath)}
+                                                aria-label="Remove existing dish image"
+                                                title="Remove image"
+                                              >
+                                                <FiX />
+                                              </button>
+                                              <img
+                                                src={`${API_URL}/${imgPath}`}
+                                                alt={`${formData.title || "Dish"} preview ${idx + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
+                                              />
+                                              <figcaption>
+                                                <span title={imgPath}>{imgPath.split("/").pop()}</span>
+                                                <small>Saved on dish</small>
+                                              </figcaption>
+                                            </figure>
+                                          ))}
+                                          {imagePreviews.map((preview, idx) => (
+                                            <figure key={preview.id} className="upload-preview-card is-new">
+                                              <span className="upload-preview-badge new">New</span>
+                                              <button
+                                                type="button"
+                                                className="upload-preview-remove"
+                                                onClick={() => handleRemoveSelectedImage(idx)}
+                                                aria-label={`Remove ${preview.name}`}
+                                                title="Remove selected image"
+                                              >
+                                                <FiX />
+                                              </button>
+                                              <img src={preview.url} alt={preview.name} loading="lazy" decoding="async" />
+                                              <figcaption>
+                                                <span title={preview.name}>{preview.name}</span>
+                                                <small>{formatFileSize(preview.size)}</small>
+                                              </figcaption>
+                                            </figure>
+                                          ))}
                                         </div>
-                                    </div>
-                                    {selectedImages.length > 0 && (
-                                      <button type="button" className="clear-upload-btn" onClick={(e) => { e.stopPropagation(); clearMenuUploadFiles(); }}>
-                                        Clear
-                                      </button>
+                                        <div className="upload-stage-footer">
+                                          <button
+                                            type="button"
+                                            className="btn-upload-stage-action replace"
+                                            onClick={handleTriggerReplaceImage}
+                                          >
+                                            <FiUploadCloud aria-hidden="true" />
+                                            <span>Replace Image</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="btn-upload-stage-action remove"
+                                            onClick={handleRemoveAllImages}
+                                          >
+                                            <FiTrash2 aria-hidden="true" />
+                                            <span>Remove Image</span>
+                                          </button>
+                                        </div>
+                                      </div>
                                     )}
                                 </div>
-                                {imagePreviews.length > 0 && (
-                                  <div className="upload-preview-grid">
-                                    {imagePreviews.map((preview) => (
-                                      <figure key={preview.id} className="upload-preview-card">
-                                        <img src={preview.url} alt={preview.name} loading="lazy" decoding="async" />
-                                        <figcaption>
-                                          <span title={preview.name}>{preview.name}</span>
-                                          <small>{formatFileSize(preview.size)}</small>
-                                        </figcaption>
-                                      </figure>
-                                    ))}
-                                  </div>
-                                )}
                             </div>
 
                             <div className="input-group-modern col-desc">
