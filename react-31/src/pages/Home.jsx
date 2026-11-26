@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -8,7 +8,20 @@ import {
 } from "react-icons/fa";
 import "./Home.css";
 
+const GALLERY_IMAGES = [
+    "/blue.jpg",
+    "/bor.jpg",
+    "/chicken.jpg",
+    "/pizza4.jpg",
+    "/pasta2.jpg",
+    "/crepe1.jpg",
+    "/porito.jpg",
+];
+
 export const Home = () => {
+    const [expandedGalleryIdx, setExpandedGalleryIdx] = useState(null);
+    const galleryWrapperRef = useRef(null);
+
     useEffect(() => {
         AOS.init({
             duration: 1000,
@@ -16,6 +29,31 @@ export const Home = () => {
             easing: 'ease-out-cubic'
         });
     }, []);
+
+    useEffect(() => {
+        if (expandedGalleryIdx === null) return undefined;
+        const handleOutsideClick = (event) => {
+            if (galleryWrapperRef.current && !galleryWrapperRef.current.contains(event.target)) {
+                setExpandedGalleryIdx(null);
+            }
+        };
+        document.addEventListener("pointerdown", handleOutsideClick);
+        return () => document.removeEventListener("pointerdown", handleOutsideClick);
+    }, [expandedGalleryIdx]);
+
+    const handleGalleryItemClick = (index, event) => {
+        const nextIdx = expandedGalleryIdx === index ? null : index;
+        setExpandedGalleryIdx(nextIdx);
+        if (nextIdx !== null && event?.currentTarget) {
+            requestAnimationFrame(() => {
+                event.currentTarget.scrollIntoView({
+                    behavior: "smooth",
+                    inline: "nearest",
+                    block: "nearest",
+                });
+            });
+        }
+    };
 
     return (
         <div className="home-container">
@@ -144,14 +182,21 @@ export const Home = () => {
                         </p>
                     </div>
 
-                    <div className="expanding-gallery-wrapper">
-                        <div className="expanding-item" style={{ backgroundImage: "url('/blue.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/bor.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/chicken.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/pizza4.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/pasta2.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/crepe1.jpg')" }}></div>
-                        <div className="expanding-item" style={{ backgroundImage: "url('/porito.jpg')" }}></div>
+                    <div
+                        ref={galleryWrapperRef}
+                        className={`expanding-gallery-wrapper ${expandedGalleryIdx !== null ? "has-expanded" : ""}`}
+                    >
+                        {GALLERY_IMAGES.map((src, index) => (
+                            <button
+                                key={src}
+                                type="button"
+                                className={`expanding-item ${expandedGalleryIdx === index ? "is-expanded" : ""}`}
+                                style={{ backgroundImage: `url('${src}')` }}
+                                aria-label={`Culinary masterpiece ${index + 1}`}
+                                aria-pressed={expandedGalleryIdx === index}
+                                onClick={(e) => handleGalleryItemClick(index, e)}
+                            />
+                        ))}
                     </div>
                 </div>
             </section>

@@ -433,6 +433,9 @@
 
 .expanding-item {
   flex: 1;
+  border: none;
+  padding: 0;
+  background-color: transparent;
   border-radius: 30px; 
   background-size: cover;
   background-position: center;
@@ -651,7 +654,8 @@
     height: 100%;
     border-radius: 22px;
     scroll-snap-align: start;
-    cursor: grab;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .expanding-item:hover {
@@ -663,6 +667,23 @@
   .expanding-item:hover::before {
     opacity: 0.5;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 40%);
+  }
+
+  .expanding-gallery-wrapper.has-expanded .expanding-item:not(.is-expanded),
+  .expanding-gallery-wrapper.has-expanded .expanding-item:not(.is-expanded):hover {
+    flex: 0 0 calc((100% - (3 * var(--gallery-gap))) * 0.16);
+  }
+
+  .expanding-gallery-wrapper.has-expanded .expanding-item.is-expanded,
+  .expanding-gallery-wrapper.has-expanded .expanding-item.is-expanded:hover {
+    flex: 0 0 calc((100% - (3 * var(--gallery-gap))) * 0.52);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(173, 52, 62, 0.22);
+  }
+
+  .expanding-gallery-wrapper.has-expanded .expanding-item.is-expanded::before {
+    opacity: 1;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, transparent 60%);
   }
 }
 
@@ -704,6 +725,13 @@
     flex: 1;
     transform: none;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .expanding-item.is-expanded,
+  .expanding-item.is-expanded:hover {
+    flex: 4;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(173, 52, 62, 0.2);
   }
 }
 
