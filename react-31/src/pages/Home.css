@@ -344,10 +344,14 @@
 .gallery-animation-section {
   padding: 100px 80px;
   background-color: var(--white);
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .gallery-animation-content {
   max-width: 1200px;
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -599,16 +603,107 @@
     max-height: none;
   }
 
-  /* MOBILE GALLERY FIX */
+  /* MOBILE & TABLET PORTRAIT SWIPEABLE 4-CARD GALLERY */
+  .gallery-animation-section {
+    padding: 48px 16px;
+  }
+
+  .gallery-animation-content {
+    gap: 24px;
+  }
+
+  .gallery-main-title {
+    font-size: clamp(28px, 7.5vw, 38px);
+    line-height: 1.18;
+    margin-bottom: 12px;
+  }
+
+  .gallery-main-desc {
+    font-size: 15px;
+  }
+
   .expanding-gallery-wrapper {
-    flex-direction: column;
-    height: 700px; 
-    gap: 10px;
+    --gallery-gap: 10px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    height: 320px;
+    gap: var(--gallery-gap);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 6px;
+  }
+
+  .expanding-gallery-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .expanding-item {
+    flex: 0 0 calc((100% - (3 * var(--gallery-gap))) / 4);
+    min-width: 0;
+    height: 100%;
+    border-radius: 22px;
+    scroll-snap-align: start;
+    cursor: grab;
   }
 
   .expanding-item:hover {
-    flex: 3;
-    transform: translateX(5px) translateY(0); 
+    flex: 0 0 calc((100% - (3 * var(--gallery-gap))) / 4);
+    transform: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .expanding-item:hover::before {
+    opacity: 0.5;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 40%);
+  }
+}
+
+@media (max-width: 480px) {
+  .expanding-gallery-wrapper {
+    --gallery-gap: 8px;
+    height: 235px;
+  }
+
+  .expanding-item {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 390px) {
+  .expanding-gallery-wrapper {
+    --gallery-gap: 8px;
+    height: 215px;
+  }
+}
+
+@media (max-width: 375px) {
+  .gallery-animation-section {
+    padding: 42px 12px;
+  }
+
+  .expanding-gallery-wrapper {
+    --gallery-gap: 6px;
+    height: 195px;
+  }
+
+  .expanding-item {
+    border-radius: 16px;
+  }
+}
+
+@media (hover: none) and (min-width: 769px) {
+  .expanding-item:hover {
+    flex: 1;
+    transform: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 }
 
